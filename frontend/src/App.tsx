@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
-import { Backtest } from './pages/Backtest';
+import { BacktestPage } from './components/backtest/BacktestPage';
 import { Agents } from './pages/Agents';
 import { Portfolio } from './pages/Portfolio';
 import { Chart } from './pages/Chart';
@@ -16,7 +16,7 @@ function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="chart/:symbol" element={<Chart />} />
-          <Route path="backtest" element={<Backtest />} />
+          <Route path="backtest" element={<BacktestPage />} />
           <Route path="strategies" element={<Strategies />} />
           <Route path="agents" element={<Agents />} />
           <Route path="llm" element={<LLMExperts />} />
