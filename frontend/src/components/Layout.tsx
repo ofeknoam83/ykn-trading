@@ -24,6 +24,9 @@ export function Layout() {
           <NavLink to="/agents" className={({ isActive }) => (isActive ? 'active' : '')}>
             AI Agents
           </NavLink>
+          <NavLink to="/scanner" className={({ isActive }) => (isActive ? 'active' : '')}>
+            Scanner
+          </NavLink>
         </nav>
       </header>
       <main className="main">

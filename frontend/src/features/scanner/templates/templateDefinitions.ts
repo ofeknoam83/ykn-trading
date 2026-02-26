@@ -1,0 +1,340 @@
+import type { ScanTemplate } from '../types/scanner.types';
+
+export const SCAN_TEMPLATES: ScanTemplate[] = [
+  {
+    id: 'tpl_oversold_bounce',
+    name: 'Oversold Bounce',
+    category: 'mean_reversion',
+    description:
+      'RSI(14) below 30 with price above 200-day moving average and volume spike. Classic "buy the dip in an uptrend" setup.',
+    conditions: {
+      id: 'grp_1',
+      operator: 'AND',
+      conditions: [
+        { id: 'c1', type: 'technical', indicator: 'RSI', params: { period: 14 }, operator: '<', value: 30, timeframe: '1d' },
+        { id: 'c2', type: 'technical', indicator: 'PRICE', params: {}, operator: '>', value: 'dynamic', dynamicRef: 'SMA(200)', timeframe: '1d' },
+        { id: 'c3', type: 'volume', indicator: 'VOLUME_RATIO', params: { period: 20 }, operator: '>', value: 1.5, timeframe: '1d' },
+      ],
+    },
+    universeDefaults: { assetClass: ['us_equity'], marketCapMin: 1e9 },
+    scoringDefaults: { weights: { signalStrength: 0.3, historicalHitRate: 0.25, regimeCompatibility: 0.2, portfolioFit: 0.15, recency: 0.1 } },
+    bestRegime: 'Bull / Neutral',
+    historicalHitRate: 62,
+    avgMatchesPerDay: 12,
+    conditionCount: 3,
+  },
+  {
+    id: 'tpl_golden_cross',
+    name: 'Golden Cross',
+    category: 'trend',
+    description:
+      'SMA(50) crosses above SMA(200) within the last 3 bars. Classic long-term bullish trend confirmation signal.',
+    conditions: {
+      id: 'grp_2',
+      operator: 'AND',
+      conditions: [
+        { id: 'c1', type: 'technical', indicator: 'SMA', params: { period: 50 }, operator: 'crosses_above', value: 'dynamic', dynamicRef: 'SMA(200)', timeframe: '1d' },
+      ],
+    },
+    universeDefaults: { assetClass: ['us_equity'], marketCapMin: 5e8 },
+    scoringDefaults: { weights: { signalStrength: 0.3, historicalHitRate: 0.25, regimeCompatibility: 0.2, portfolioFit: 0.15, recency: 0.1 } },
+    bestRegime: 'Early Bull',
+    historicalHitRate: 58,
+    avgMatchesPerDay: 5,
+    conditionCount: 1,
+  },
+  {
+    id: 'tpl_death_cross_warning',
+    name: 'Death Cross Warning',
+    category: 'trend',
+    description:
+      'SMA(50) within 2% of crossing below SMA(200). Early warning for potential bearish trend shift.',
+    conditions: {
+      id: 'grp_3',
+      operator: 'AND',
+      conditions: [
+        { id: 'c1', type: 'technical', indicator: 'SMA_DISTANCE', params: { fast: 50, slow: 200 }, operator: 'between', value: -2, timeframe: '1d' },
+      ],
+    },
+    universeDefaults: { assetClass: ['us_equity'], marketCapMin: 1e9 },
+    scoringDefaults: { weights: { signalStrength: 0.35, historicalHitRate: 0.25, regimeCompatibility: 0.2, portfolioFit: 0.1, recency: 0.1 } },
+    bestRegime: 'Late Bull / Early Bear',
+    historicalHitRate: 54,
+    avgMatchesPerDay: 8,
+    conditionCount: 1,
+  },
+  {
+    id: 'tpl_unusual_volume',
+    name: 'Unusual Volume',
+    category: 'volume',
+    description:
+      'Volume exceeds 3x the 20-day average with minimal price movement and no major news. Potential institutional accumulation or distribution.',
+    conditions: {
+      id: 'grp_4',
+      operator: 'AND',
+      conditions: [
+        { id: 'c1', type: 'volume', indicator: 'VOLUME_RATIO', params: { period: 20 }, operator: '>', value: 3, timeframe: '1d' },
+        { id: 'c2', type: 'price_action', indicator: 'PRICE_CHANGE_PCT', params: { period: 1 }, operator: 'between', value: -1, timeframe: '1d' },
+      ],
+    },
+    universeDefaults: { assetClass: ['us_equity'], marketCapMin: 5e8, avgVolumeMin: 500000 },
+    scoringDefaults: { weights: { signalStrength: 0.35, historicalHitRate: 0.2, regimeCompatibility: 0.15, portfolioFit: 0.15, recency: 0.15 } },
+    bestRegime: 'Any',
+    historicalHitRate: 55,
+    avgMatchesPerDay: 15,
+    conditionCount: 2,
+  },
+  {
+    id: 'tpl_breakout_imminent',
+    name: 'Breakout Imminent',
+    category: 'volatility',
+    description:
+      'Bollinger Band width at 6-month low with ADX above 25 and price near upper band. Volatility compression preceding a potential breakout.',
+    conditions: {
+      id: 'grp_5',
+      operator: 'AND',
+      conditions: [
+        { id: 'c1', type: 'technical', indicator: 'BB_WIDTH_PERCENTILE', params: { period: 20, lookback: 120 }, operator: '<', value: 10, timeframe: '1d' },
+        { id: 'c2', type: 'technical', indicator: 'ADX', params: { period: 14 }, operator: '>', value: 25, timeframe: '1d' },
+        { id: 'c3', type: 'technical', indicator: 'BB_POSITION', params: { period: 20 }, operator: '>', value: 0.8, timeframe: '1d' },
+      ],
+    },
+    universeDefaults: { assetClass: ['us_equity'], marketCapMin: 1e9 },
+    scoringDefaults: { weights: { signalStrength: 0.3, historicalHitRate: 0.25, regimeCompatibility: 0.2, portfolioFit: 0.15, recency: 0.1 } },
+    bestRegime: 'Trending',
+    historicalHitRate: 60,
+    avgMatchesPerDay: 7,
+    conditionCount: 3,
+  },
+  {
+    id: 'tpl_macd_bullish_divergence',
+    name: 'MACD Bullish Divergence',
+    category: 'momentum',
+    description:
+      'Price making lower lows while MACD makes higher lows over the last 20 bars. Classic bullish divergence signaling potential reversal.',
+    conditions: {
+      id: 'grp_6',
+      operator: 'AND',
+      conditions: [
+        { id: 'c1', type: 'technical', indicator: 'DIVERGENCE_BULLISH', params: { indicator: 1, lookback: 20 }, operator: '==', value: 1, timeframe: '1d' },
+      ],
+    },
+    universeDefaults: { assetClass: ['us_equity'], marketCapMin: 1e9 },
+    scoringDefaults: { weights: { signalStrength: 0.3, historicalHitRate: 0.25, regimeCompatibility: 0.2, portfolioFit: 0.15, recency: 0.1 } },
+    bestRegime: 'Bear / Neutral',
+    historicalHitRate: 57,
+    avgMatchesPerDay: 6,
+    conditionCount: 1,
+  },
+  {
+    id: 'tpl_gap_and_go',
+    name: 'Gap and Go',
+    category: 'momentum',
+    description:
+      'Gapped up more than 3% at open, holding above VWAP, with volume exceeding 2x average in the first 30 minutes.',
+    conditions: {
+      id: 'grp_7',
+      operator: 'AND',
+      conditions: [
+        { id: 'c1', type: 'price_action', indicator: 'GAP_PCT', params: {}, operator: '>', value: 3, timeframe: '1d' },
+        { id: 'c2', type: 'technical', indicator: 'PRICE', params: {}, operator: '>', value: 'dynamic', dynamicRef: 'VWAP', timeframe: '1d' },
+        { id: 'c3', type: 'volume', indicator: 'VOLUME_RATIO', params: { period: 20 }, operator: '>', value: 2, timeframe: '1d' },
+      ],
+    },
+    universeDefaults: { assetClass: ['us_equity'], marketCapMin: 5e8 },
+    scoringDefaults: { weights: { signalStrength: 0.35, historicalHitRate: 0.2, regimeCompatibility: 0.15, portfolioFit: 0.15, recency: 0.15 } },
+    bestRegime: 'Any',
+    historicalHitRate: 59,
+    avgMatchesPerDay: 10,
+    conditionCount: 3,
+  },
+  {
+    id: 'tpl_52week_high_breakout',
+    name: '52-Week High Breakout',
+    category: 'breakout',
+    description:
+      'Price within 1% of 52-week high with volume above 1.5x average and RSI between 50-70. Momentum breakout with confirmation.',
+    conditions: {
+      id: 'grp_8',
+      operator: 'AND',
+      conditions: [
+        { id: 'c1', type: 'price_action', indicator: 'DISTANCE_52W_HIGH', params: {}, operator: '<', value: 1, timeframe: '1d' },
+        { id: 'c2', type: 'volume', indicator: 'VOLUME_RATIO', params: { period: 20 }, operator: '>', value: 1.5, timeframe: '1d' },
+        { id: 'c3', type: 'technical', indicator: 'RSI', params: { period: 14 }, operator: 'between', value: 50, timeframe: '1d' },
+      ],
+    },
+    universeDefaults: { assetClass: ['us_equity'], marketCapMin: 1e9 },
+    scoringDefaults: { weights: { signalStrength: 0.3, historicalHitRate: 0.25, regimeCompatibility: 0.2, portfolioFit: 0.15, recency: 0.1 } },
+    bestRegime: 'Bull',
+    historicalHitRate: 61,
+    avgMatchesPerDay: 8,
+    conditionCount: 3,
+  },
+  {
+    id: 'tpl_mean_reversion',
+    name: 'Mean Reversion Setup',
+    category: 'mean_reversion',
+    description:
+      'Price more than 2 ATR below SMA(20) with RSI below 25 and MFI below 20. Extreme oversold conditions suggesting snapback potential.',
+    conditions: {
+      id: 'grp_9',
+      operator: 'AND',
+      conditions: [
+        { id: 'c1', type: 'technical', indicator: 'ATR_DISTANCE', params: { atr_period: 14, sma_period: 20 }, operator: '<', value: -2, timeframe: '1d' },
+        { id: 'c2', type: 'technical', indicator: 'RSI', params: { period: 14 }, operator: '<', value: 25, timeframe: '1d' },
+        { id: 'c3', type: 'technical', indicator: 'MFI', params: { period: 14 }, operator: '<', value: 20, timeframe: '1d' },
+      ],
+    },
+    universeDefaults: { assetClass: ['us_equity'], marketCapMin: 1e9 },
+    scoringDefaults: { weights: { signalStrength: 0.35, historicalHitRate: 0.25, regimeCompatibility: 0.2, portfolioFit: 0.1, recency: 0.1 } },
+    bestRegime: 'Neutral / Volatile',
+    historicalHitRate: 64,
+    avgMatchesPerDay: 5,
+    conditionCount: 3,
+  },
+  {
+    id: 'tpl_sector_rotation',
+    name: 'Sector Rotation Entry',
+    category: 'cross_asset',
+    description:
+      'Sector ETF RSI(14) crosses above 50 with positive 5-day relative strength vs SPY. Identifies sectors gaining momentum.',
+    conditions: {
+      id: 'grp_10',
+      operator: 'AND',
+      conditions: [
+        { id: 'c1', type: 'technical', indicator: 'RSI', params: { period: 14 }, operator: 'crosses_above', value: 50, timeframe: '1d' },
+        { id: 'c2', type: 'technical', indicator: 'RELATIVE_STRENGTH', params: { benchmark: 0, period: 5 }, operator: '>', value: 0, timeframe: '1d' },
+      ],
+    },
+    universeDefaults: { assetClass: ['etf'] },
+    scoringDefaults: { weights: { signalStrength: 0.3, historicalHitRate: 0.2, regimeCompatibility: 0.25, portfolioFit: 0.15, recency: 0.1 } },
+    bestRegime: 'Rotating',
+    historicalHitRate: 56,
+    avgMatchesPerDay: 3,
+    conditionCount: 2,
+  },
+  {
+    id: 'tpl_value_catalyst',
+    name: 'Value + Catalyst',
+    category: 'fundamental',
+    description:
+      'P/E below sector average, P/B under 1.5, and insider buying in the last 30 days. Fundamental value with insider confidence.',
+    conditions: {
+      id: 'grp_11',
+      operator: 'AND',
+      conditions: [
+        { id: 'c1', type: 'fundamental', indicator: 'PE_VS_SECTOR', params: {}, operator: '<', value: 0, timeframe: '1d' },
+        { id: 'c2', type: 'fundamental', indicator: 'PB_RATIO', params: {}, operator: '<', value: 1.5, timeframe: '1d' },
+        { id: 'c3', type: 'fundamental', indicator: 'INSIDER_BUYING_30D', params: {}, operator: '>', value: 0, timeframe: '1d' },
+      ],
+    },
+    universeDefaults: { assetClass: ['us_equity'], marketCapMin: 1e9 },
+    scoringDefaults: { weights: { signalStrength: 0.25, historicalHitRate: 0.3, regimeCompatibility: 0.15, portfolioFit: 0.2, recency: 0.1 } },
+    bestRegime: 'Any',
+    historicalHitRate: 63,
+    avgMatchesPerDay: 6,
+    conditionCount: 3,
+  },
+  {
+    id: 'tpl_volatility_compression',
+    name: 'Volatility Compression',
+    category: 'volatility',
+    description:
+      'ATR(14) at 20-day low, Bollinger Width below 4%, and ADX under 20. Maximum compression before a potential explosive move.',
+    conditions: {
+      id: 'grp_12',
+      operator: 'AND',
+      conditions: [
+        { id: 'c1', type: 'technical', indicator: 'ATR_PERCENTILE', params: { period: 14, lookback: 20 }, operator: '<', value: 10, timeframe: '1d' },
+        { id: 'c2', type: 'technical', indicator: 'BB_WIDTH', params: { period: 20 }, operator: '<', value: 4, timeframe: '1d' },
+        { id: 'c3', type: 'technical', indicator: 'ADX', params: { period: 14 }, operator: '<', value: 20, timeframe: '1d' },
+      ],
+    },
+    universeDefaults: { assetClass: ['us_equity'], marketCapMin: 1e9 },
+    scoringDefaults: { weights: { signalStrength: 0.3, historicalHitRate: 0.25, regimeCompatibility: 0.2, portfolioFit: 0.15, recency: 0.1 } },
+    bestRegime: 'Pre-breakout',
+    historicalHitRate: 58,
+    avgMatchesPerDay: 9,
+    conditionCount: 3,
+  },
+  {
+    id: 'tpl_dividend_capture',
+    name: 'Dividend Capture',
+    category: 'income',
+    description:
+      'Ex-dividend date within 5 trading days, yield above 3%, and RSI above 50. Capture dividends in technically healthy stocks.',
+    conditions: {
+      id: 'grp_13',
+      operator: 'AND',
+      conditions: [
+        { id: 'c1', type: 'fundamental', indicator: 'EX_DIV_DAYS', params: {}, operator: '<=', value: 5, timeframe: '1d' },
+        { id: 'c2', type: 'fundamental', indicator: 'DIVIDEND_YIELD', params: {}, operator: '>', value: 3, timeframe: '1d' },
+        { id: 'c3', type: 'technical', indicator: 'RSI', params: { period: 14 }, operator: '>', value: 50, timeframe: '1d' },
+      ],
+    },
+    universeDefaults: { assetClass: ['us_equity'], marketCapMin: 5e9 },
+    scoringDefaults: { weights: { signalStrength: 0.25, historicalHitRate: 0.3, regimeCompatibility: 0.15, portfolioFit: 0.2, recency: 0.1 } },
+    bestRegime: 'Any',
+    historicalHitRate: 66,
+    avgMatchesPerDay: 4,
+    conditionCount: 3,
+  },
+  {
+    id: 'tpl_post_pullback_continuation',
+    name: 'Post-Pullback Continuation',
+    category: 'trend',
+    description:
+      'Price pulled back to SMA(20) from above with RSI between 40-55 and long-term uptrend intact (SMA(50) > SMA(200)).',
+    conditions: {
+      id: 'grp_14',
+      operator: 'AND',
+      conditions: [
+        { id: 'c1', type: 'technical', indicator: 'PRICE_VS_SMA', params: { period: 20 }, operator: 'between', value: -1, timeframe: '1d' },
+        { id: 'c2', type: 'technical', indicator: 'RSI', params: { period: 14 }, operator: 'between', value: 40, timeframe: '1d' },
+        { id: 'c3', type: 'technical', indicator: 'SMA', params: { period: 50 }, operator: '>', value: 'dynamic', dynamicRef: 'SMA(200)', timeframe: '1d' },
+      ],
+    },
+    universeDefaults: { assetClass: ['us_equity'], marketCapMin: 1e9 },
+    scoringDefaults: { weights: { signalStrength: 0.3, historicalHitRate: 0.25, regimeCompatibility: 0.2, portfolioFit: 0.15, recency: 0.1 } },
+    bestRegime: 'Bull',
+    historicalHitRate: 61,
+    avgMatchesPerDay: 10,
+    conditionCount: 3,
+  },
+  {
+    id: 'tpl_earnings_momentum',
+    name: 'Earnings Momentum',
+    category: 'fundamental',
+    description:
+      'Beat on both EPS and revenue last quarter, with price within 5% of post-earnings gap. Riding institutional re-rating.',
+    conditions: {
+      id: 'grp_15',
+      operator: 'AND',
+      conditions: [
+        { id: 'c1', type: 'fundamental', indicator: 'EPS_SURPRISE', params: {}, operator: '>', value: 0, timeframe: '1d' },
+        { id: 'c2', type: 'fundamental', indicator: 'REVENUE_SURPRISE', params: {}, operator: '>', value: 0, timeframe: '1d' },
+        { id: 'c3', type: 'price_action', indicator: 'DISTANCE_FROM_EARNINGS_GAP', params: {}, operator: '<', value: 5, timeframe: '1d' },
+      ],
+    },
+    universeDefaults: { assetClass: ['us_equity'], marketCapMin: 2e9 },
+    scoringDefaults: { weights: { signalStrength: 0.25, historicalHitRate: 0.3, regimeCompatibility: 0.15, portfolioFit: 0.2, recency: 0.1 } },
+    bestRegime: 'Any',
+    historicalHitRate: 60,
+    avgMatchesPerDay: 5,
+    conditionCount: 3,
+  },
+];
+
+export const TEMPLATE_CATEGORIES = [
+  { id: 'all', label: 'All' },
+  { id: 'momentum', label: 'Momentum' },
+  { id: 'mean_reversion', label: 'Mean Reversion' },
+  { id: 'breakout', label: 'Breakout' },
+  { id: 'fundamental', label: 'Fundamental' },
+  { id: 'volume', label: 'Volume' },
+  { id: 'trend', label: 'Trend' },
+  { id: 'volatility', label: 'Volatility' },
+  { id: 'multi_tf', label: 'Multi-TF' },
+  { id: 'income', label: 'Income' },
+  { id: 'cross_asset', label: 'Cross-Asset' },
+] as const;
