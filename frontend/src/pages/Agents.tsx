@@ -10,6 +10,9 @@ import {
   getAgentRuns,
 } from '../api/client';
 import { JobProgress } from '../components/ui/JobProgress';
+import { WorkflowEditor } from '../components/agents/workflow/WorkflowEditor';
+import type { Workflow } from '../types/workflow';
+import { createDefaultWorkflow } from '../types/workflow';
 
 interface Agent {
   id: string;
@@ -17,7 +20,7 @@ interface Agent {
   description?: string;
   model?: string;
   system_prompt?: string;
-  workflow?: Record<string, unknown>;
+  workflow?: Workflow;
   enabled_tools?: string[];
 }
 
@@ -26,12 +29,16 @@ interface Tool {
   description?: string;
 }
 
+type AgentTab = 'general' | 'workflow' | 'prompts' | 'tools';
+
 export function Agents() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [tools, setTools] = useState<Tool[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Agent | null>(null);
   const [form, setForm] = useState({ name: '', description: '', system_prompt: '', enabled_tools: [] as string[] });
+  const [workflow, setWorkflow] = useState<Workflow>(createDefaultWorkflow());
+  const [activeTab, setActiveTab] = useState<AgentTab>('general');
   const [runJobId, setRunJobId] = useState<string | null>(null);
   const [runs, setRuns] = useState<{ id: string; started_at?: string }[]>([]);
 
@@ -46,11 +53,15 @@ export function Agents() {
 
   useEffect(() => {
     if (selectedId) {
-      getAgent(selectedId).then((a) => setEditing(a)).catch(() => setEditing(null));
+      getAgent(selectedId).then((a) => {
+        setEditing(a);
+        setWorkflow(a.workflow ?? createDefaultWorkflow());
+      }).catch(() => setEditing(null));
       getAgentRuns(selectedId).then((r) => setRuns(r.runs || [])).catch(() => setRuns([]));
     } else {
       setEditing(null);
       setRuns([]);
+      setWorkflow(createDefaultWorkflow());
     }
   }, [selectedId]);
 
@@ -70,24 +81,21 @@ export function Agents() {
   async function handleSave() {
     if (!form.name.trim()) return;
     try {
+      const payload = {
+        name: form.name,
+        description: form.description || undefined,
+        system_prompt: form.system_prompt || undefined,
+        enabled_tools: form.enabled_tools,
+        workflow: workflow as unknown as Record<string, unknown>,
+      };
       if (editing) {
-        await updateAgent(editing.id, {
-          name: form.name,
-          description: form.description || undefined,
-          system_prompt: form.system_prompt || undefined,
-          enabled_tools: form.enabled_tools,
-        });
+        await updateAgent(editing.id, payload);
       } else {
-        const created = await createAgent({
-          name: form.name,
-          description: form.description || undefined,
-          system_prompt: form.system_prompt || undefined,
-          enabled_tools: form.enabled_tools,
-        });
+        const created = await createAgent(payload);
         setSelectedId(created.id);
       }
       loadAgents();
-      setEditing(editing ? { ...editing, ...form } : null);
+      setEditing(editing ? { ...editing, ...form, workflow } : null);
     } catch (e) {
       console.error(e);
     }
@@ -122,6 +130,13 @@ export function Agents() {
     }));
   }
 
+  const TABS: { key: AgentTab; label: string }[] = [
+    { key: 'general', label: 'General' },
+    { key: 'workflow', label: 'Workflow' },
+    { key: 'prompts', label: 'Prompts' },
+    { key: 'tools', label: 'Tools' },
+  ];
+
   return (
     <div className="agents-page">
       <h2>AI Trading Agents</h2>
@@ -134,7 +149,9 @@ export function Agents() {
             onClick={() => {
               setEditing(null);
               setForm({ name: '', description: '', system_prompt: '', enabled_tools: [] });
+              setWorkflow(createDefaultWorkflow());
               setSelectedId(null);
+              setActiveTab('general');
             }}
           >
             + New Agent
@@ -156,57 +173,107 @@ export function Agents() {
 
         <main className="agents-main">
           {(editing || !selectedId) && (
-            <div className="agent-form-panel">
-              <h3>{editing ? 'Edit Agent' : 'Create Agent'}</h3>
-              <div className="agent-form">
-                <label>
-                  Name
-                  <input
-                    value={form.name}
-                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                    placeholder="Agent name"
-                  />
-                </label>
-                <label>
-                  Description
-                  <input
-                    value={form.description}
-                    onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                    placeholder="Optional description"
-                  />
-                </label>
-                <label>
-                  System Prompt
-                  <textarea
-                    value={form.system_prompt}
-                    onChange={(e) => setForm((f) => ({ ...f, system_prompt: e.target.value }))}
-                    placeholder="Instructions for the agent..."
-                    rows={4}
-                  />
-                </label>
-                <div className="tools-picker">
-                  <h4>Enabled Tools</h4>
-                  {tools.map((t) => (
-                    <label key={t.name} className="tool-check">
-                      <input
-                        type="checkbox"
-                        checked={form.enabled_tools.includes(t.name)}
-                        onChange={() => toggleTool(t.name)}
-                      />
-                      {t.name}
-                    </label>
-                  ))}
-                </div>
-                <div className="form-actions">
-                  <button onClick={handleSave}>Save</button>
-                  {editing && (
-                    <button className="danger" onClick={() => handleDelete(editing.id)}>
-                      Delete
-                    </button>
-                  )}
-                </div>
+            <>
+              <div className="agent-tabs">
+                {TABS.map((tab) => (
+                  <button
+                    key={tab.key}
+                    className={`agent-tab ${activeTab === tab.key ? 'agent-tab-active' : ''}`}
+                    onClick={() => setActiveTab(tab.key)}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
               </div>
-            </div>
+
+              {activeTab === 'general' && (
+                <div className="agent-form-panel">
+                  <h3>{editing ? 'Edit Agent' : 'Create Agent'}</h3>
+                  <div className="agent-form">
+                    <label>
+                      Name
+                      <input
+                        value={form.name}
+                        onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                        placeholder="Agent name"
+                      />
+                    </label>
+                    <label>
+                      Description
+                      <input
+                        value={form.description}
+                        onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                        placeholder="Optional description"
+                      />
+                    </label>
+                    <div className="form-actions">
+                      <button onClick={handleSave}>Save</button>
+                      {editing && (
+                        <button className="danger" onClick={() => handleDelete(editing.id)}>
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'workflow' && (
+                <div className="agent-workflow-panel">
+                  <WorkflowEditor
+                    workflow={workflow}
+                    onChange={setWorkflow}
+                    enabledTools={form.enabled_tools}
+                  />
+                  <div className="form-actions" style={{ marginTop: '1rem' }}>
+                    <button onClick={handleSave}>Save Agent</button>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'prompts' && (
+                <div className="agent-form-panel">
+                  <h3>System Prompt</h3>
+                  <div className="agent-form">
+                    <label>
+                      System Prompt
+                      <textarea
+                        value={form.system_prompt}
+                        onChange={(e) => setForm((f) => ({ ...f, system_prompt: e.target.value }))}
+                        placeholder="Instructions for the agent..."
+                        rows={8}
+                      />
+                    </label>
+                    <div className="form-actions">
+                      <button onClick={handleSave}>Save</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'tools' && (
+                <div className="agent-form-panel">
+                  <h3>Enabled Tools</h3>
+                  <div className="tools-picker">
+                    {tools.map((t) => (
+                      <label key={t.name} className="tool-check">
+                        <input
+                          type="checkbox"
+                          checked={form.enabled_tools.includes(t.name)}
+                          onChange={() => toggleTool(t.name)}
+                        />
+                        {t.name}
+                        {t.description && <span className="tool-desc"> - {t.description}</span>}
+                      </label>
+                    ))}
+                    {tools.length === 0 && <p className="empty">No tools available</p>}
+                  </div>
+                  <div className="form-actions" style={{ marginTop: '1rem' }}>
+                    <button onClick={handleSave}>Save</button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {editing && (
