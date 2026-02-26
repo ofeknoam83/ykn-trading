@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ykn-trading"
+version = "0.1.0"
+description = "Research and trading platform"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "sqlalchemy[asyncio]>=2.0",
+    "asyncpg",
+    "redis>=5.0",
+    "alembic",
+    "yfinance",
+    "ccxt",
+    "alpaca-py>=0.12",
+    "vectorbt",
+    "pandas",
+    "numpy",
+    "anthropic",
+    "openai",
+    "scikit-learn",
+    "xgboost",
+    "lightgbm",
+    "python-multipart",
+    "httpx",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+    "mypy",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
