@@ -1,0 +1,63 @@
+import type { FieldSchema } from '../../lib/dynamic-form/types';
+
+export const evaluatePositionsFieldSchema: FieldSchema[] = [
+  {
+    key: 'risk_thresholds.max_position_pct',
+    type: 'slider',
+    label: 'Max Position %',
+    description: 'Maximum percentage of portfolio a single position can occupy.',
+    required: true,
+    defaultValue: 10,
+    group: 'Risk Thresholds',
+    groupOrder: 1,
+    order: 1,
+    constraints: { min: 1, max: 100, step: 1, unit: '%' },
+  },
+  {
+    key: 'risk_thresholds.max_drawdown_pct',
+    type: 'slider',
+    label: 'Max Drawdown %',
+    description: 'Maximum allowed drawdown before triggering alert.',
+    required: true,
+    defaultValue: 5,
+    group: 'Risk Thresholds',
+    groupOrder: 1,
+    order: 2,
+    constraints: { min: 1, max: 100, step: 1, unit: '%' },
+  },
+  {
+    key: 'risk_thresholds.stop_loss_pct',
+    type: 'slider',
+    label: 'Stop Loss %',
+    description: 'Optional stop-loss threshold.',
+    group: 'Risk Thresholds',
+    groupOrder: 1,
+    order: 3,
+    constraints: { min: 0.1, max: 100, step: 0.1, unit: '%' },
+  },
+  {
+    key: 'profit_targets.take_profit_pct',
+    type: 'slider',
+    label: 'Take Profit %',
+    description: 'Optional take-profit threshold.',
+    group: 'Profit Targets',
+    groupOrder: 2,
+    order: 1,
+    constraints: { min: 0.1, max: 1000, step: 0.1, unit: '%' },
+  },
+  {
+    key: 'evaluate_against',
+    type: 'pill_group',
+    label: 'Evaluate Against',
+    required: true,
+    defaultValue: 'entry_price',
+    order: 10,
+    constraints: {
+      options: [
+        { value: 'entry_price', label: 'Entry Price' },
+        { value: 'recent_high', label: 'Recent High' },
+        { value: 'moving_average', label: 'Moving Average' },
+      ],
+    },
+  },
+];

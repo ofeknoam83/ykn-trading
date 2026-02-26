@@ -23,6 +23,8 @@ import {
   conditionSchema,
   customSchema,
 } from '../../../types/workflow';
+import type { FieldSchema } from '../../../lib/dynamic-form/types';
+import { STEP_FIELD_SCHEMAS } from '../../../schemas/workflow-steps';
 
 export interface StepTypeDefinition {
   type: StepType;
@@ -32,6 +34,7 @@ export interface StepTypeDefinition {
   borderColor: string;
   defaultConfig: StepConfig;
   configSchema: ZodSchema;
+  fieldSchema: FieldSchema[];
   summaryFn: (config: StepConfig) => string;
   maxInstances?: number;
   requiresTools?: string[];
@@ -75,6 +78,7 @@ export const STEP_TYPE_REGISTRY: Record<StepType, StepTypeDefinition> = {
       focus_areas: ['price_action', 'technicals'],
     } as AnalyzeMarketConfig,
     configSchema: analyzeMarketSchema,
+    fieldSchema: STEP_FIELD_SCHEMAS.analyze_market,
     summaryFn: (c) => {
       const config = c as AnalyzeMarketConfig;
       const assets = config.assets.length > 0 ? config.assets.join(', ') : 'portfolio assets';
@@ -93,6 +97,7 @@ export const STEP_TYPE_REGISTRY: Record<StepType, StepTypeDefinition> = {
       include_historical_positions: false,
     } as FetchPortfolioConfig,
     configSchema: fetchPortfolioSchema,
+    fieldSchema: STEP_FIELD_SCHEMAS.fetch_portfolio,
     summaryFn: (c) => {
       const config = c as FetchPortfolioConfig;
       const parts: string[] = [];
@@ -114,6 +119,7 @@ export const STEP_TYPE_REGISTRY: Record<StepType, StepTypeDefinition> = {
       evaluate_against: 'entry_price',
     } as EvaluatePositionsConfig,
     configSchema: evaluatePositionsSchema,
+    fieldSchema: STEP_FIELD_SCHEMAS.evaluate_positions,
     summaryFn: (c) => {
       const config = c as EvaluatePositionsConfig;
       return `max ${config.risk_thresholds.max_position_pct}% per position \u00B7 ${config.risk_thresholds.max_drawdown_pct}% max DD`;
@@ -134,6 +140,7 @@ export const STEP_TYPE_REGISTRY: Record<StepType, StepTypeDefinition> = {
       include_technicals: true,
     } as ResearchConfig,
     configSchema: researchSchema,
+    fieldSchema: STEP_FIELD_SCHEMAS.research,
     summaryFn: (c) => {
       const config = c as ResearchConfig;
       return `${config.scope.replace('_', ' ')} \u00B7 ${config.time_horizon} horizon`;
@@ -154,6 +161,7 @@ export const STEP_TYPE_REGISTRY: Record<StepType, StepTypeDefinition> = {
       require_reasoning: true,
     } as DecideActionsConfig,
     configSchema: decideActionsSchema,
+    fieldSchema: STEP_FIELD_SCHEMAS.decide_actions,
     summaryFn: (c) => {
       const config = c as DecideActionsConfig;
       return `confidence \u2265 ${config.confidence_threshold}% \u00B7 max ${config.max_trades_per_run} trades`;
@@ -174,6 +182,7 @@ export const STEP_TYPE_REGISTRY: Record<StepType, StepTypeDefinition> = {
       dry_run_first: true,
     } as ExecuteConfig,
     configSchema: executeSchema,
+    fieldSchema: STEP_FIELD_SCHEMAS.execute,
     summaryFn: (c) => {
       const config = c as ExecuteConfig;
       return `${config.approval_mode === 'auto' ? 'auto-execute' : 'human approval'} \u00B7 ${config.default_order_type}`;
@@ -196,6 +205,7 @@ export const STEP_TYPE_REGISTRY: Record<StepType, StepTypeDefinition> = {
       delivery: 'store',
     } as ReportConfig,
     configSchema: reportSchema,
+    fieldSchema: STEP_FIELD_SCHEMAS.report,
     summaryFn: (c) => {
       const config = c as ReportConfig;
       return `${config.format}${config.include_reasoning_chain ? ' \u00B7 with reasoning' : ''}`;
@@ -215,6 +225,7 @@ export const STEP_TYPE_REGISTRY: Record<StepType, StepTypeDefinition> = {
       false_label: 'No',
     } as ConditionConfig,
     configSchema: conditionSchema,
+    fieldSchema: STEP_FIELD_SCHEMAS.condition,
     summaryFn: (c) => conditionSummary(c as ConditionConfig),
   },
 
@@ -229,6 +240,7 @@ export const STEP_TYPE_REGISTRY: Record<StepType, StepTypeDefinition> = {
       expected_output: 'text',
     } as CustomConfig,
     configSchema: customSchema,
+    fieldSchema: STEP_FIELD_SCHEMAS.custom,
     summaryFn: (c) => {
       const config = c as CustomConfig;
       return config.instruction.slice(0, 60) + (config.instruction.length > 60 ? '...' : '') || 'no instruction set';

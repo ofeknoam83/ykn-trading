@@ -1,0 +1,92 @@
+import type { FieldSchema } from '../../lib/dynamic-form/types';
+
+export const researchFieldSchema: FieldSchema[] = [
+  {
+    key: 'scope',
+    type: 'pill_group',
+    label: 'Research Scope',
+    required: true,
+    defaultValue: 'market_wide',
+    order: 1,
+    constraints: {
+      options: [
+        { value: 'single_asset', label: 'Single Asset' },
+        { value: 'sector', label: 'Sector' },
+        { value: 'market_wide', label: 'Market Wide' },
+      ],
+    },
+  },
+  {
+    key: 'target_assets',
+    type: 'tags',
+    label: 'Target Assets',
+    placeholder: 'Type symbol + Enter',
+    order: 2,
+    showWhen: { field: 'scope', operator: 'eq', value: 'single_asset' },
+  },
+  {
+    key: 'target_sector',
+    type: 'select',
+    label: 'Target Sector',
+    order: 2,
+    showWhen: { field: 'scope', operator: 'eq', value: 'sector' },
+    constraints: {
+      options: [
+        { value: 'technology', label: 'Technology' },
+        { value: 'healthcare', label: 'Healthcare' },
+        { value: 'financials', label: 'Financials' },
+        { value: 'energy', label: 'Energy' },
+        { value: 'consumer_discretionary', label: 'Consumer Discretionary' },
+        { value: 'industrials', label: 'Industrials' },
+        { value: 'materials', label: 'Materials' },
+        { value: 'utilities', label: 'Utilities' },
+        { value: 'real_estate', label: 'Real Estate' },
+        { value: 'communication', label: 'Communication Services' },
+        { value: 'consumer_staples', label: 'Consumer Staples' },
+      ],
+    },
+  },
+  {
+    key: 'time_horizon',
+    type: 'pill_group',
+    label: 'Time Horizon',
+    required: true,
+    defaultValue: '1w',
+    order: 3,
+    constraints: {
+      options: [
+        { value: '1d', label: '1 Day' },
+        { value: '1w', label: '1 Week' },
+        { value: '1m', label: '1 Month' },
+        { value: '3m', label: '3 Months' },
+      ],
+    },
+  },
+  {
+    key: 'include_fundamentals',
+    type: 'toggle',
+    label: 'Include Fundamentals',
+    defaultValue: true,
+    group: 'Data Sources',
+    groupOrder: 2,
+    order: 1,
+  },
+  {
+    key: 'include_news',
+    type: 'toggle',
+    label: 'Include News',
+    defaultValue: true,
+    group: 'Data Sources',
+    groupOrder: 2,
+    order: 2,
+  },
+  {
+    key: 'include_technicals',
+    type: 'toggle',
+    label: 'Include Technicals',
+    defaultValue: true,
+    group: 'Data Sources',
+    groupOrder: 2,
+    order: 3,
+  },
+];

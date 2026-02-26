@@ -1,0 +1,60 @@
+import type { FieldSchema } from '../../lib/dynamic-form/types';
+
+export const decideActionsFieldSchema: FieldSchema[] = [
+  {
+    key: 'confidence_threshold',
+    type: 'slider',
+    label: 'Confidence Threshold',
+    description: 'Minimum confidence level to act on a signal.',
+    required: true,
+    defaultValue: 60,
+    order: 1,
+    constraints: { min: 0, max: 100, step: 5, unit: '%' },
+  },
+  {
+    key: 'max_trades_per_run',
+    type: 'number',
+    label: 'Max Trades Per Run',
+    description: 'Maximum number of trade decisions per execution.',
+    required: true,
+    defaultValue: 5,
+    order: 2,
+    constraints: { min: 1, max: 50, step: 1 },
+  },
+  {
+    key: 'max_position_size_pct',
+    type: 'slider',
+    label: 'Max Position Size',
+    description: 'Maximum portfolio percentage for a single trade.',
+    required: true,
+    defaultValue: 10,
+    order: 3,
+    constraints: { min: 1, max: 100, step: 1, unit: '%' },
+  },
+  {
+    key: 'allowed_actions',
+    type: 'multi_select',
+    label: 'Allowed Actions',
+    required: true,
+    defaultValue: ['buy', 'sell', 'hold'],
+    order: 4,
+    constraints: {
+      minItems: 1,
+      options: [
+        { value: 'buy', label: 'Buy' },
+        { value: 'sell', label: 'Sell' },
+        { value: 'hold', label: 'Hold' },
+        { value: 'increase', label: 'Increase Position' },
+        { value: 'decrease', label: 'Decrease Position' },
+      ],
+    },
+  },
+  {
+    key: 'require_reasoning',
+    type: 'toggle',
+    label: 'Require Reasoning',
+    description: 'LLM must provide reasoning for each trade decision.',
+    defaultValue: true,
+    order: 5,
+  },
+];
