@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { IndicatorDef } from '../types/scanner.types';
+import { getSentimentIndicatorsForScanner } from '../../sentiment/indicators/sentimentIndicatorRegistry';
 
 export const INDICATOR_CATALOG: IndicatorDef[] = [
   // Momentum
@@ -37,6 +38,9 @@ export const INDICATOR_CATALOG: IndicatorDef[] = [
   { id: 'DISTANCE_52W_HIGH', name: 'Dist. from 52w High', category: 'relative', type: 'price_action', defaultParams: {}, paramLabels: {}, supportedOperators: ['<', '>', 'between'], supportedTimeframes: ['1d'], description: 'Distance from 52-week high in %' },
   { id: 'DISTANCE_52W_LOW', name: 'Dist. from 52w Low', category: 'relative', type: 'price_action', defaultParams: {}, paramLabels: {}, supportedOperators: ['<', '>', 'between'], supportedTimeframes: ['1d'], description: 'Distance from 52-week low in %' },
   { id: 'GAP_PCT', name: 'Gap %', category: 'gaps', type: 'price_action', defaultParams: {}, paramLabels: {}, supportedOperators: ['<', '>', 'between'], supportedTimeframes: ['1d'], description: 'Opening gap percentage' },
+
+  // Sentiment — auto-registered from sentiment indicator registry
+  ...getSentimentIndicatorsForScanner(),
 ];
 
 const CATEGORIES = [
@@ -47,6 +51,13 @@ const CATEGORIES = [
   { id: 'valuation', label: 'Fundamental' },
   { id: 'relative', label: 'Price Action' },
   { id: 'gaps', label: 'Gaps' },
+  // Sentiment categories
+  { id: 'news', label: 'Sentiment: News' },
+  { id: 'social', label: 'Sentiment: Social' },
+  { id: 'institutional', label: 'Sentiment: Institutional' },
+  { id: 'earnings', label: 'Sentiment: Earnings' },
+  { id: 'event', label: 'Sentiment: Events' },
+  { id: 'composite', label: 'Sentiment: Composite' },
 ];
 
 interface IndicatorSelectorProps {

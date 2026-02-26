@@ -26,7 +26,7 @@ export type ConditionOperator =
 
 export type Timeframe = '1m' | '5m' | '15m' | '1h' | '4h' | '1d' | '1w' | '1M';
 
-export type ConditionType = 'technical' | 'fundamental' | 'price_action' | 'volume' | 'custom';
+export type ConditionType = 'technical' | 'fundamental' | 'price_action' | 'volume' | 'custom' | 'sentiment';
 
 export interface ScanCondition {
   id: string;
@@ -368,7 +368,7 @@ export type TemplateCategory =
 export interface IndicatorDef {
   id: string;
   name: string;
-  category: 'momentum' | 'trend' | 'volatility' | 'volume' | 'pattern' | 'valuation' | 'growth' | 'quality' | 'size' | 'relative' | 'gaps' | 'range' | 'support_resistance';
+  category: 'momentum' | 'trend' | 'volatility' | 'volume' | 'pattern' | 'valuation' | 'growth' | 'quality' | 'size' | 'relative' | 'gaps' | 'range' | 'support_resistance' | 'news' | 'social' | 'institutional' | 'earnings' | 'event' | 'composite';
   type: ConditionType;
   defaultParams: Record<string, number>;
   paramLabels: Record<string, string>;
