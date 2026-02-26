@@ -7,6 +7,7 @@ import { RegimeTab } from './RegimeTab';
 import { DistributionTab } from './DistributionTab';
 import { RollingTab } from './RollingTab';
 import { MonteCarloTab } from './MonteCarloTab';
+import { TradeForensicsPage } from '../../forensics/TradeForensicsPage';
 
 interface ResultsAnalyticsSuiteProps {
   result: BacktestResult;
@@ -16,7 +17,7 @@ interface ResultsAnalyticsSuiteProps {
   onMonteCarloComplete?: (mc: MonteCarloResult) => void;
 }
 
-type TabKey = 'overview' | 'trades' | 'drawdowns' | 'regimes' | 'distribution' | 'rolling' | 'montecarlo';
+type TabKey = 'overview' | 'trades' | 'drawdowns' | 'regimes' | 'distribution' | 'rolling' | 'montecarlo' | 'forensics';
 
 const TABS: { key: TabKey; label: string; requiresData?: string }[] = [
   { key: 'overview', label: 'Overview' },
@@ -26,6 +27,7 @@ const TABS: { key: TabKey; label: string; requiresData?: string }[] = [
   { key: 'distribution', label: 'Distribution', requiresData: 'return_distribution' },
   { key: 'rolling', label: 'Rolling', requiresData: 'rolling_metrics' },
   { key: 'montecarlo', label: 'Monte Carlo' },
+  { key: 'forensics', label: 'Forensics' },
 ];
 
 export function ResultsAnalyticsSuite({
@@ -40,6 +42,7 @@ export function ResultsAnalyticsSuite({
   const visibleTabs = TABS.filter((tab) => {
     if (tab.key === 'regimes' && !showRegime) return false;
     if (tab.key === 'montecarlo' && !showMonteCarlo && !result.monte_carlo) return false;
+    if (tab.key === 'forensics' && result.trades.length === 0) return false;
     return true;
   });
 
@@ -75,6 +78,7 @@ export function ResultsAnalyticsSuite({
         {activeTab === 'montecarlo' && (
           <MonteCarloTab result={result} onMonteCarloComplete={onMonteCarloComplete} />
         )}
+        {activeTab === 'forensics' && <TradeForensicsPage result={result} />}
       </div>
     </div>
   );
