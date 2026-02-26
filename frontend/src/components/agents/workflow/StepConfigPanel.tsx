@@ -1,26 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { WorkflowStep, StepConfig } from '../../../types/workflow';
 import { STEP_TYPE_REGISTRY } from './stepTypeRegistry';
-import { AnalyzeMarketConfigForm } from './config-forms/AnalyzeMarketConfigForm';
-import { FetchPortfolioConfigForm } from './config-forms/FetchPortfolioConfigForm';
-import { EvaluatePositionsConfigForm } from './config-forms/EvaluatePositionsConfigForm';
-import { ResearchConfigForm } from './config-forms/ResearchConfigForm';
-import { DecideActionsConfigForm } from './config-forms/DecideActionsConfigForm';
-import { ExecuteConfigForm } from './config-forms/ExecuteConfigForm';
-import { ReportConfigForm } from './config-forms/ReportConfigForm';
-import { ConditionConfigForm } from './config-forms/ConditionConfigForm';
-import { CustomConfigForm } from './config-forms/CustomConfigForm';
-import type {
-  AnalyzeMarketConfig,
-  FetchPortfolioConfig,
-  EvaluatePositionsConfig,
-  ResearchConfig,
-  DecideActionsConfig,
-  ExecuteConfig,
-  ReportConfig,
-  ConditionConfig,
-  CustomConfig,
-} from '../../../types/workflow';
+import { DynamicForm } from '../../../lib/dynamic-form';
 
 interface StepConfigPanelProps {
   step: WorkflowStep;
@@ -31,29 +12,11 @@ interface StepConfigPanelProps {
 
 export function StepConfigPanel({ step, onUpdate, onDelete, onClose }: StepConfigPanelProps) {
   const [label, setLabel] = useState(step.label);
-  const [config, setConfig] = useState<StepConfig>(step.config);
-  const [errors, setErrors] = useState<Record<string, string>>({});
   const def = STEP_TYPE_REGISTRY[step.type];
 
   useEffect(() => {
     setLabel(step.label);
-    setConfig(step.config);
-    setErrors({});
-  }, [step.id, step.label, step.config]);
-
-  function handleApply() {
-    const result = def.configSchema.safeParse(config);
-    if (!result.success) {
-      const errs: Record<string, string> = {};
-      for (const issue of result.error.issues) {
-        errs[issue.path.join('.')] = issue.message;
-      }
-      setErrors(errs);
-      return;
-    }
-    setErrors({});
-    onUpdate({ ...step, label, config });
-  }
+  }, [step.id, step.label]);
 
   function handleDelete() {
     if (step.type === 'execute') {
@@ -62,30 +25,8 @@ export function StepConfigPanel({ step, onUpdate, onDelete, onClose }: StepConfi
     onDelete(step.id);
   }
 
-  function renderConfigForm() {
-    const formProps = { errors };
-    switch (step.type) {
-      case 'analyze_market':
-        return <AnalyzeMarketConfigForm config={config as AnalyzeMarketConfig} onChange={setConfig} {...formProps} />;
-      case 'fetch_portfolio':
-        return <FetchPortfolioConfigForm config={config as FetchPortfolioConfig} onChange={setConfig} {...formProps} />;
-      case 'evaluate_positions':
-        return <EvaluatePositionsConfigForm config={config as EvaluatePositionsConfig} onChange={setConfig} {...formProps} />;
-      case 'research':
-        return <ResearchConfigForm config={config as ResearchConfig} onChange={setConfig} {...formProps} />;
-      case 'decide_actions':
-        return <DecideActionsConfigForm config={config as DecideActionsConfig} onChange={setConfig} {...formProps} />;
-      case 'execute':
-        return <ExecuteConfigForm config={config as ExecuteConfig} onChange={setConfig} {...formProps} />;
-      case 'report':
-        return <ReportConfigForm config={config as ReportConfig} onChange={setConfig} {...formProps} />;
-      case 'condition':
-        return <ConditionConfigForm config={config as ConditionConfig} onChange={setConfig} {...formProps} />;
-      case 'custom':
-        return <CustomConfigForm config={config as CustomConfig} onChange={setConfig} {...formProps} />;
-      default:
-        return <p>Unknown step type</p>;
-    }
+  function handleSubmit(values: Record<string, unknown>) {
+    onUpdate({ ...step, label, config: values as unknown as StepConfig });
   }
 
   return (
@@ -116,12 +57,27 @@ export function StepConfigPanel({ step, onUpdate, onDelete, onClose }: StepConfi
         <hr className="config-divider" />
 
         <h4 className="scp-section-title">Configuration</h4>
-        {renderConfigForm()}
+        <DynamicForm
+          schema={def.fieldSchema}
+          initialValues={step.config as unknown as Record<string, unknown>}
+          onSubmit={handleSubmit}
+          submitLabel="Apply"
+          hideSubmit
+          onChange={(values) => {
+            // Live update: sync config as user edits
+            onUpdate({ ...step, label, config: values as unknown as StepConfig });
+          }}
+        />
       </div>
 
       <div className="scp-footer">
         <button className="scp-delete-btn" onClick={handleDelete}>Delete Step</button>
-        <button className="scp-apply-btn" onClick={handleApply}>Apply</button>
+        <button
+          className="scp-apply-btn"
+          onClick={() => onUpdate({ ...step, label, config: step.config })}
+        >
+          Apply
+        </button>
       </div>
     </div>
   );
