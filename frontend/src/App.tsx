@@ -8,6 +8,7 @@ import { LLMExperts } from './pages/LLMExperts';
 import { Strategies } from './pages/Strategies';
 import { PortfolioOperationsCenter } from './components/portfolio/PortfolioOperationsCenter';
 import { ScannerPage } from './features/scanner/ScannerPage';
+import { SentimentPage } from './features/sentiment/SentimentPage';
 import './App.css';
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
           <Route path="llm" element={<LLMExperts />} />
           <Route path="portfolio" element={<PortfolioOperationsCenter />} />
           <Route path="scanner" element={<ScannerPage />} />
+          <Route path="sentiment" element={<SentimentPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
