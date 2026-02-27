@@ -5,10 +5,11 @@ interface LibraryEntryCardProps {
   onView: () => void;
   onCompare: () => void;
   onReRun: () => void;
+  onEdit?: (update: { name?: string; notes?: string; tags?: string[] }) => void;
   onDelete: () => void;
 }
 
-export function LibraryEntryCard({ entry, onView, onCompare, onReRun, onDelete }: LibraryEntryCardProps) {
+export function LibraryEntryCard({ entry, onView, onCompare, onReRun, onEdit, onDelete }: LibraryEntryCardProps) {
   const m = entry.summary_metrics;
 
   return (
@@ -57,6 +58,19 @@ export function LibraryEntryCard({ entry, onView, onCompare, onReRun, onDelete }
         <button className="bt-action-btn" onClick={onView}>View</button>
         <button className="bt-action-btn" onClick={onCompare}>Compare</button>
         <button className="bt-action-btn" onClick={onReRun}>Re-Run</button>
+        {onEdit && (
+          <button
+            className="bt-action-btn"
+            onClick={() => {
+              const newName = prompt('Rename entry:', entry.name);
+              if (newName && newName !== entry.name) {
+                onEdit({ name: newName });
+              }
+            }}
+          >
+            Edit
+          </button>
+        )}
         <button className="bt-action-btn bt-action-danger" onClick={onDelete}>Delete</button>
       </div>
     </div>

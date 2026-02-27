@@ -1,5 +1,5 @@
 import type { BacktestResult, TradeRecord } from '../../../types/backtest';
-import type { EnrichedTradeRecord, AgentAlphaAnalysis } from '../../../types/forensics';
+import type { EnrichedTradeRecord, AgentAlphaAnalysis, AgentDecisionForensics } from '../../../types/forensics';
 import { DecisionBreakdown } from './DecisionBreakdown';
 import { AgentAlphaPanel } from './AgentAlphaPanel';
 import { HoldDecisionAnalysis } from './HoldDecisionAnalysis';
@@ -9,6 +9,7 @@ interface AgentForensicsProps {
   trade: TradeRecord | null;
   enrichedTrade: EnrichedTradeRecord | null;
   agentAlpha: AgentAlphaAnalysis | null;
+  agentForensicsData?: AgentDecisionForensics | null;
   loading: boolean;
   error: string | null;
 }
@@ -17,6 +18,7 @@ export function AgentForensics({
   trade,
   enrichedTrade,
   agentAlpha,
+  agentForensicsData,
   loading,
   error,
 }: AgentForensicsProps) {
@@ -36,7 +38,8 @@ export function AgentForensics({
     );
   }
 
-  const agentData = enrichedTrade?.agent_forensics ?? null;
+  // Prefer explicitly-fetched per-trade forensics, fall back to enriched trade data
+  const agentData = agentForensicsData ?? enrichedTrade?.agent_forensics ?? null;
 
   return (
     <div className="tf-agent">

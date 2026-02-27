@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getQuotes, getNewsFeed, getHistorical } from '../api/client';
+import { getQuotes, getNewsFeed, getNewsSources, getHistorical } from '../api/client';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 
 const REGIONS = [
@@ -129,6 +129,8 @@ export function Dashboard() {
   const [newsLoading, setNewsLoading] = useState(true);
   const [newsError, setNewsError] = useState<string | null>(null);
   const [newsCategory, setNewsCategory] = useState('');
+  const [newsSource, setNewsSource] = useState('');
+  const [availableSources, setAvailableSources] = useState<{ id: string; name: string }[]>([]);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   useEffect(() => {
@@ -152,13 +154,20 @@ export function Dashboard() {
   }, []);
 
   useEffect(() => {
+    getNewsSources()
+      .then((res) => setAvailableSources(res.sources || []))
+      .catch(() => setAvailableSources([]));
+  }, []);
+
+  useEffect(() => {
     let isFirst = true;
     async function loadNews() {
       if (isFirst) setNewsLoading(true);
       setNewsError(null);
       try {
         const res = await getNewsFeed(newsCategory || undefined);
-        setNews(res.headlines || []);
+        const headlines: NewsHeadline[] = res.headlines || [];
+        setNews(newsSource ? headlines.filter((h) => h.source === newsSource) : headlines);
         setLastUpdate(new Date());
       } catch (e) {
         setNewsError(e instanceof Error ? e.message : 'Failed to load news');
@@ -171,7 +180,7 @@ export function Dashboard() {
     loadNews();
     const t = setInterval(loadNews, 30000);
     return () => clearInterval(t);
-  }, [newsCategory]);
+  }, [newsCategory, newsSource]);
 
   return (
     <div className="dashboard">
@@ -223,6 +232,18 @@ export function Dashboard() {
               </button>
             ))}
           </div>
+          {availableSources.length > 0 && (
+            <select
+              className="news-source-filter"
+              value={newsSource}
+              onChange={(e) => setNewsSource(e.target.value)}
+            >
+              <option value="">All Sources</option>
+              {availableSources.map((s) => (
+                <option key={s.id} value={s.name}>{s.name}</option>
+              ))}
+            </select>
+          )}
         </div>
         <div className="news-panel">
           {newsLoading && <div className="news-loading">Loading news...</div>}

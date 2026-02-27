@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
   BarChart,
   Bar,
@@ -11,6 +12,7 @@ import {
   Cell,
 } from 'recharts';
 import type { BacktestResult, TradeRecord } from '../../../types/backtest';
+import { getBacktestTrades } from '../../../api/backtestApi';
 import { TradesTable } from '../shared/TradesTable';
 
 interface TradesTabProps {
@@ -74,13 +76,30 @@ function computeStreaks(trades: TradeRecord[]) {
 }
 
 export function TradesTab({ result }: TradesTabProps) {
-  const histogram = buildHistogram(result.trades);
-  const cumPnl = buildCumulativePnl(result.trades);
-  const streaks = computeStreaks(result.trades);
+  const [serverTrades, setServerTrades] = useState<TradeRecord[] | null>(null);
+
+  // Attempt to fetch trades from server (supports server-side pagination)
+  useEffect(() => {
+    if (!result.id) return;
+    getBacktestTrades(result.id)
+      .then((res) => {
+        if (Array.isArray(res?.trades) && res.trades.length > 0) {
+          setServerTrades(res.trades);
+        }
+      })
+      .catch(() => {
+        // Server endpoint may not be available yet; fall back to inline trades
+      });
+  }, [result.id]);
+
+  const trades = serverTrades ?? result.trades;
+  const histogram = buildHistogram(trades);
+  const cumPnl = buildCumulativePnl(trades);
+  const streaks = computeStreaks(trades);
 
   return (
     <div className="bt-trades-tab">
-      <TradesTable trades={result.trades} />
+      <TradesTable trades={trades} />
 
       {histogram.length > 0 && (
         <div className="bt-section">

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { MonteCarloResult } from '../../../types/backtest';
-import { runMonteCarlo } from '../../../api/backtestApi';
+import { runMonteCarlo, parseMonteCarloResult } from '../../../api/backtestApi';
 import { useJob } from '../../../hooks/useJobs';
 import { MonteCarloConfig } from './MonteCarloConfig';
 import { FanChart } from './FanChart';
@@ -38,7 +38,7 @@ export function MonteCarloSimulation({ backtestResultId, onComplete }: MonteCarl
 
   useEffect(() => {
     if (jobState.status === 'completed' && jobState.result) {
-      const mc = jobState.result as MonteCarloResult;
+      const mc = parseMonteCarloResult(jobState.result);
       setResult(mc);
       setJobId(null);
       onComplete?.(mc);

@@ -11,13 +11,17 @@ import type {
   WhatIfScenario,
 } from '../types/forensics';
 import type { BacktestResult } from '../types/backtest';
+import type { AgentDecisionForensics, NewsHeadline } from '../types/forensics';
 import {
   getTradeReplay,
   getSignalLog,
+  getSignalSummary,
   getTimingAnalysis,
   getTimingInsights,
   getSignalContribution,
   getAgentAlpha,
+  getAgentForensics,
+  getTradeNews,
   runWhatIf as apiRunWhatIf,
 } from '../api/forensicsApi';
 
@@ -28,10 +32,13 @@ export interface ForensicsStore {
   selectedTradeId: string | null;
   enrichedTrades: Record<string, EnrichedTradeRecord>;
   signalLog: BacktestSignalLog | null;
+  signalSummary: BacktestSignalLog['summary'] | null;
   timingAnalysis: TimingMetrics[] | null;
   timingInsights: TimingInsight[] | null;
   signalContribution: SignalContributionAnalysis | null;
   agentAlpha: AgentAlphaAnalysis | null;
+  agentForensics: Record<string, AgentDecisionForensics>;
+  tradeNews: Record<string, { entry_news: NewsHeadline[]; exit_news: NewsHeadline[] }>;
   whatIfHistory: WhatIfScenario[];
   loading: {
     trades: boolean;
@@ -46,9 +53,12 @@ export interface ForensicsStore {
   selectTrade: (tradeId: string | null) => void;
   loadTradeReplay: (tradeId: string) => Promise<EnrichedTradeRecord | null>;
   loadSignalLog: () => Promise<void>;
+  loadSignalSummary: () => Promise<void>;
   loadTimingAnalysis: () => Promise<void>;
   loadSignalContribution: () => Promise<void>;
   loadAgentAlpha: () => Promise<void>;
+  loadAgentForensics: (tradeId: string) => Promise<AgentDecisionForensics | null>;
+  loadTradeNews: (tradeId: string) => Promise<{ entry_news: NewsHeadline[]; exit_news: NewsHeadline[] } | null>;
   executeWhatIf: (params: WhatIfParams) => Promise<WhatIfResult | null>;
   clearWhatIfHistory: () => void;
 }
@@ -58,10 +68,13 @@ export const useForensicsStore = create<ForensicsStore>((set, get) => ({
   selectedTradeId: null,
   enrichedTrades: {},
   signalLog: null,
+  signalSummary: null,
   timingAnalysis: null,
   timingInsights: null,
   signalContribution: null,
   agentAlpha: null,
+  agentForensics: {},
+  tradeNews: {},
   whatIfHistory: [],
   loading: {
     trades: false,
@@ -78,10 +91,13 @@ export const useForensicsStore = create<ForensicsStore>((set, get) => ({
       selectedTradeId: null,
       enrichedTrades: {},
       signalLog: null,
+      signalSummary: null,
       timingAnalysis: null,
       timingInsights: null,
       signalContribution: null,
       agentAlpha: null,
+      agentForensics: {},
+      tradeNews: {},
       whatIfHistory: [],
       errors: {},
     }),
@@ -206,6 +222,64 @@ export const useForensicsStore = create<ForensicsStore>((set, get) => ({
       }));
     } finally {
       set((state) => ({ loading: { ...state.loading, agentAlpha: false } }));
+    }
+  },
+
+  loadSignalSummary: async () => {
+    const { backtestResult, signalSummary } = get();
+    if (!backtestResult || signalSummary) return;
+    try {
+      const data = await getSignalSummary(backtestResult.id);
+      set({ signalSummary: data });
+    } catch (err) {
+      set((state) => ({
+        errors: {
+          ...state.errors,
+          signalSummary: err instanceof Error ? err.message : 'Failed to load signal summary',
+        },
+      }));
+    }
+  },
+
+  loadAgentForensics: async (tradeId) => {
+    const { backtestResult, agentForensics } = get();
+    if (!backtestResult) return null;
+    if (agentForensics[tradeId]) return agentForensics[tradeId];
+    try {
+      const data = await getAgentForensics(backtestResult.id, tradeId);
+      set((state) => ({
+        agentForensics: { ...state.agentForensics, [tradeId]: data },
+      }));
+      return data;
+    } catch (err) {
+      set((state) => ({
+        errors: {
+          ...state.errors,
+          agentForensics: err instanceof Error ? err.message : 'Failed to load agent forensics',
+        },
+      }));
+      return null;
+    }
+  },
+
+  loadTradeNews: async (tradeId) => {
+    const { backtestResult, tradeNews } = get();
+    if (!backtestResult) return null;
+    if (tradeNews[tradeId]) return tradeNews[tradeId];
+    try {
+      const data = await getTradeNews(backtestResult.id, tradeId);
+      set((state) => ({
+        tradeNews: { ...state.tradeNews, [tradeId]: data },
+      }));
+      return data;
+    } catch (err) {
+      set((state) => ({
+        errors: {
+          ...state.errors,
+          tradeNews: err instanceof Error ? err.message : 'Failed to load trade news',
+        },
+      }));
+      return null;
     }
   },
 

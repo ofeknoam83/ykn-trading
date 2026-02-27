@@ -4,7 +4,7 @@ import type {
   OptimizationParameter,
   WalkForwardResult,
 } from '../../../types/backtest';
-import { runWalkForward } from '../../../api/backtestApi';
+import { runWalkForward, parseWalkForwardResult } from '../../../api/backtestApi';
 import { useJob } from '../../../hooks/useJobs';
 import { WorkbenchConfigPanel } from '../workbench/WorkbenchConfigPanel';
 import { WalkForwardConfig } from './WalkForwardConfig';
@@ -56,7 +56,7 @@ export function WalkForwardAnalysis() {
 
   useEffect(() => {
     if (jobState.status === 'completed' && jobState.result) {
-      setResult(jobState.result as WalkForwardResult);
+      setResult(parseWalkForwardResult(jobState.result));
       setJobId(null);
     }
     if (jobState.status === 'failed') {
