@@ -21,6 +21,11 @@ export function AssetPicker({ value = '', onChange, placeholder = 'Search symbol
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Sync internal query state when parent value changes
+  useEffect(() => {
+    setQuery(value);
+  }, [value]);
+
   const search = useCallback(async (q: string) => {
     if (!q || q.length < 2) {
       setResults([]);

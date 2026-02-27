@@ -24,10 +24,11 @@ export function BacktestPage() {
   const [saveNotes, setSaveNotes] = useState('');
 
   const store = useBacktestStore();
+  const fetchPinnedResults = useBacktestStore((s) => s.fetchPinnedResults);
 
   useEffect(() => {
-    store.fetchPinnedResults();
-  }, []);
+    fetchPinnedResults();
+  }, [fetchPinnedResults]);
 
   const handleCompare = useCallback((result: BacktestResult) => {
     store.addToComparison(result);

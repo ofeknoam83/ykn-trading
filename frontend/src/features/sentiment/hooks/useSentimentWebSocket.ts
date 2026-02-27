@@ -8,9 +8,14 @@ export function useSentimentWebSocket() {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const reconnectDelay = useRef(1000);
+  const disposedRef = useRef(false);
 
   useEffect(() => {
+    disposedRef.current = false;
+
     function connect() {
+      if (disposedRef.current) return;
+
       const ws = new WebSocket(`${WS_BASE}/sentiment`);
       wsRef.current = ws;
 
@@ -73,6 +78,7 @@ export function useSentimentWebSocket() {
       };
 
       ws.onclose = () => {
+        if (disposedRef.current) return;
         reconnectTimer.current = setTimeout(() => {
           reconnectDelay.current = Math.min(reconnectDelay.current * 2, 16000);
           connect();
@@ -87,6 +93,7 @@ export function useSentimentWebSocket() {
     connect();
 
     return () => {
+      disposedRef.current = true;
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
       wsRef.current?.close();
     };
