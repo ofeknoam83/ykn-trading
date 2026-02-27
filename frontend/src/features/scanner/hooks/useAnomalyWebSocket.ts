@@ -8,10 +8,13 @@ export function useAnomalyWebSocket() {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const reconnectAttempt = useRef(0);
+  const disposedRef = useRef(false);
 
   const { addAnomaly, removeAnomaly } = useScannerStore();
 
   const connect = useCallback(() => {
+    if (disposedRef.current) return;
+
     try {
       const ws = new WebSocket(`${WS_BASE}/anomalies`);
       wsRef.current = ws;
@@ -35,6 +38,7 @@ export function useAnomalyWebSocket() {
       };
 
       ws.onclose = () => {
+        if (disposedRef.current) return;
         const delays = [1000, 2000, 4000, 8000, 16000];
         const delay = delays[Math.min(reconnectAttempt.current, delays.length - 1)];
         reconnectAttempt.current++;
@@ -50,8 +54,10 @@ export function useAnomalyWebSocket() {
   }, [addAnomaly, removeAnomaly]);
 
   useEffect(() => {
+    disposedRef.current = false;
     connect();
     return () => {
+      disposedRef.current = true;
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
       if (wsRef.current) wsRef.current.close();
     };

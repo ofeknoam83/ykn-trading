@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { create } from 'zustand';
 import type {
   EnrichedTradeRecord,
   BacktestSignalLog,
@@ -23,200 +23,212 @@ import {
 
 const MAX_WHATIF_HISTORY = 20;
 
-export function useForensicsStore() {
-  const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(null);
-  const [selectedTradeId, setSelectedTradeId] = useState<string | null>(null);
+export interface ForensicsStore {
+  backtestResult: BacktestResult | null;
+  selectedTradeId: string | null;
+  enrichedTrades: Record<string, EnrichedTradeRecord>;
+  signalLog: BacktestSignalLog | null;
+  timingAnalysis: TimingMetrics[] | null;
+  timingInsights: TimingInsight[] | null;
+  signalContribution: SignalContributionAnalysis | null;
+  agentAlpha: AgentAlphaAnalysis | null;
+  whatIfHistory: WhatIfScenario[];
+  loading: {
+    trades: boolean;
+    signals: boolean;
+    timing: boolean;
+    contribution: boolean;
+    agentAlpha: boolean;
+  };
+  errors: Record<string, string | null>;
 
-  // Loaded data
-  const [enrichedTrades, setEnrichedTrades] = useState<
-    Record<string, EnrichedTradeRecord>
-  >({});
-  const [signalLog, setSignalLog] = useState<BacktestSignalLog | null>(null);
-  const [timingAnalysis, setTimingAnalysis] = useState<TimingMetrics[] | null>(null);
-  const [timingInsights, setTimingInsights] = useState<TimingInsight[] | null>(null);
-  const [signalContribution, setSignalContribution] =
-    useState<SignalContributionAnalysis | null>(null);
-  const [agentAlpha, setAgentAlpha] = useState<AgentAlphaAnalysis | null>(null);
+  setResult: (result: BacktestResult) => void;
+  selectTrade: (tradeId: string | null) => void;
+  loadTradeReplay: (tradeId: string) => Promise<EnrichedTradeRecord | null>;
+  loadSignalLog: () => Promise<void>;
+  loadTimingAnalysis: () => Promise<void>;
+  loadSignalContribution: () => Promise<void>;
+  loadAgentAlpha: () => Promise<void>;
+  executeWhatIf: (params: WhatIfParams) => Promise<WhatIfResult | null>;
+  clearWhatIfHistory: () => void;
+}
 
-  // What-if session
-  const [whatIfHistory, setWhatIfHistory] = useState<WhatIfScenario[]>([]);
-
-  // Loading states
-  const [loading, setLoading] = useState({
+export const useForensicsStore = create<ForensicsStore>((set, get) => ({
+  backtestResult: null,
+  selectedTradeId: null,
+  enrichedTrades: {},
+  signalLog: null,
+  timingAnalysis: null,
+  timingInsights: null,
+  signalContribution: null,
+  agentAlpha: null,
+  whatIfHistory: [],
+  loading: {
     trades: false,
     signals: false,
     timing: false,
     contribution: false,
     agentAlpha: false,
-  });
+  },
+  errors: {},
 
-  // Error states
-  const [errors, setErrors] = useState<Record<string, string | null>>({});
+  setResult: (result) =>
+    set({
+      backtestResult: result,
+      selectedTradeId: null,
+      enrichedTrades: {},
+      signalLog: null,
+      timingAnalysis: null,
+      timingInsights: null,
+      signalContribution: null,
+      agentAlpha: null,
+      whatIfHistory: [],
+      errors: {},
+    }),
 
-  const setResult = useCallback((result: BacktestResult) => {
-    setBacktestResult(result);
-    setSelectedTradeId(null);
-    setEnrichedTrades({});
-    setSignalLog(null);
-    setTimingAnalysis(null);
-    setTimingInsights(null);
-    setSignalContribution(null);
-    setAgentAlpha(null);
-    setWhatIfHistory([]);
-    setErrors({});
-  }, []);
+  selectTrade: (tradeId) => set({ selectedTradeId: tradeId }),
 
-  const selectTrade = useCallback((tradeId: string | null) => {
-    setSelectedTradeId(tradeId);
-  }, []);
+  loadTradeReplay: async (tradeId) => {
+    const { backtestResult, enrichedTrades } = get();
+    if (!backtestResult) return null;
+    if (enrichedTrades[tradeId]) return enrichedTrades[tradeId];
 
-  const loadTradeReplay = useCallback(
-    async (tradeId: string) => {
-      if (!backtestResult) return null;
-      if (enrichedTrades[tradeId]) return enrichedTrades[tradeId];
-
-      setLoading((prev) => ({ ...prev, trades: true }));
-      setErrors((prev) => ({ ...prev, tradeReplay: null }));
-      try {
-        const data = await getTradeReplay(backtestResult.id, tradeId);
-        setEnrichedTrades((prev) => ({ ...prev, [tradeId]: data }));
-        return data;
-      } catch (err) {
-        setErrors((prev) => ({
-          ...prev,
+    set((state) => ({
+      loading: { ...state.loading, trades: true },
+      errors: { ...state.errors, tradeReplay: null },
+    }));
+    try {
+      const data = await getTradeReplay(backtestResult.id, tradeId);
+      set((state) => ({
+        enrichedTrades: { ...state.enrichedTrades, [tradeId]: data },
+      }));
+      return data;
+    } catch (err) {
+      set((state) => ({
+        errors: {
+          ...state.errors,
           tradeReplay: err instanceof Error ? err.message : 'Failed to load trade replay',
-        }));
-        return null;
-      } finally {
-        setLoading((prev) => ({ ...prev, trades: false }));
-      }
-    },
-    [backtestResult, enrichedTrades]
-  );
+        },
+      }));
+      return null;
+    } finally {
+      set((state) => ({ loading: { ...state.loading, trades: false } }));
+    }
+  },
 
-  const loadSignalLog = useCallback(async () => {
+  loadSignalLog: async () => {
+    const { backtestResult, signalLog } = get();
     if (!backtestResult || signalLog) return;
-    setLoading((prev) => ({ ...prev, signals: true }));
-    setErrors((prev) => ({ ...prev, signals: null }));
+    set((state) => ({
+      loading: { ...state.loading, signals: true },
+      errors: { ...state.errors, signals: null },
+    }));
     try {
       const data = await getSignalLog(backtestResult.id);
-      setSignalLog(data);
+      set({ signalLog: data });
     } catch (err) {
-      setErrors((prev) => ({
-        ...prev,
-        signals: err instanceof Error ? err.message : 'Failed to load signals',
+      set((state) => ({
+        errors: {
+          ...state.errors,
+          signals: err instanceof Error ? err.message : 'Failed to load signals',
+        },
       }));
     } finally {
-      setLoading((prev) => ({ ...prev, signals: false }));
+      set((state) => ({ loading: { ...state.loading, signals: false } }));
     }
-  }, [backtestResult, signalLog]);
+  },
 
-  const loadTimingAnalysis = useCallback(async () => {
+  loadTimingAnalysis: async () => {
+    const { backtestResult, timingAnalysis } = get();
     if (!backtestResult || timingAnalysis) return;
-    setLoading((prev) => ({ ...prev, timing: true }));
-    setErrors((prev) => ({ ...prev, timing: null }));
+    set((state) => ({
+      loading: { ...state.loading, timing: true },
+      errors: { ...state.errors, timing: null },
+    }));
     try {
       const [metrics, insights] = await Promise.all([
         getTimingAnalysis(backtestResult.id),
         getTimingInsights(backtestResult.id),
       ]);
-      setTimingAnalysis(metrics);
-      setTimingInsights(insights);
+      set({ timingAnalysis: metrics, timingInsights: insights });
     } catch (err) {
-      setErrors((prev) => ({
-        ...prev,
-        timing: err instanceof Error ? err.message : 'Failed to load timing',
+      set((state) => ({
+        errors: {
+          ...state.errors,
+          timing: err instanceof Error ? err.message : 'Failed to load timing',
+        },
       }));
     } finally {
-      setLoading((prev) => ({ ...prev, timing: false }));
+      set((state) => ({ loading: { ...state.loading, timing: false } }));
     }
-  }, [backtestResult, timingAnalysis]);
+  },
 
-  const loadSignalContribution = useCallback(async () => {
+  loadSignalContribution: async () => {
+    const { backtestResult, signalContribution } = get();
     if (!backtestResult || signalContribution) return;
-    setLoading((prev) => ({ ...prev, contribution: true }));
-    setErrors((prev) => ({ ...prev, contribution: null }));
+    set((state) => ({
+      loading: { ...state.loading, contribution: true },
+      errors: { ...state.errors, contribution: null },
+    }));
     try {
       const data = await getSignalContribution(backtestResult.id);
-      setSignalContribution(data);
+      set({ signalContribution: data });
     } catch (err) {
-      setErrors((prev) => ({
-        ...prev,
-        contribution:
-          err instanceof Error ? err.message : 'Failed to load signal contribution',
+      set((state) => ({
+        errors: {
+          ...state.errors,
+          contribution:
+            err instanceof Error ? err.message : 'Failed to load signal contribution',
+        },
       }));
     } finally {
-      setLoading((prev) => ({ ...prev, contribution: false }));
+      set((state) => ({ loading: { ...state.loading, contribution: false } }));
     }
-  }, [backtestResult, signalContribution]);
+  },
 
-  const loadAgentAlpha = useCallback(async () => {
+  loadAgentAlpha: async () => {
+    const { backtestResult, agentAlpha } = get();
     if (!backtestResult || agentAlpha) return;
-    setLoading((prev) => ({ ...prev, agentAlpha: true }));
-    setErrors((prev) => ({ ...prev, agentAlpha: null }));
+    set((state) => ({
+      loading: { ...state.loading, agentAlpha: true },
+      errors: { ...state.errors, agentAlpha: null },
+    }));
     try {
       const data = await getAgentAlpha(backtestResult.id);
-      setAgentAlpha(data);
+      set({ agentAlpha: data });
     } catch (err) {
-      setErrors((prev) => ({
-        ...prev,
-        agentAlpha:
-          err instanceof Error ? err.message : 'Failed to load agent alpha',
+      set((state) => ({
+        errors: {
+          ...state.errors,
+          agentAlpha:
+            err instanceof Error ? err.message : 'Failed to load agent alpha',
+        },
       }));
     } finally {
-      setLoading((prev) => ({ ...prev, agentAlpha: false }));
+      set((state) => ({ loading: { ...state.loading, agentAlpha: false } }));
     }
-  }, [backtestResult, agentAlpha]);
+  },
 
-  const executeWhatIf = useCallback(
-    async (params: WhatIfParams): Promise<WhatIfResult | null> => {
-      try {
-        const result = await apiRunWhatIf(params);
-        const scenario: WhatIfScenario = {
-          id: `whatif-${Date.now()}`,
-          label: buildWhatIfLabel(params),
-          params,
-          result,
-        };
-        setWhatIfHistory((prev) => {
-          const next = [scenario, ...prev];
-          return next.slice(0, MAX_WHATIF_HISTORY);
-        });
-        return result;
-      } catch {
-        return null;
-      }
-    },
-    []
-  );
+  executeWhatIf: async (params) => {
+    try {
+      const result = await apiRunWhatIf(params);
+      const scenario: WhatIfScenario = {
+        id: `whatif-${Date.now()}`,
+        label: buildWhatIfLabel(params),
+        params,
+        result,
+      };
+      set((state) => ({
+        whatIfHistory: [scenario, ...state.whatIfHistory].slice(0, MAX_WHATIF_HISTORY),
+      }));
+      return result;
+    } catch {
+      return null;
+    }
+  },
 
-  const clearWhatIfHistory = useCallback(() => {
-    setWhatIfHistory([]);
-  }, []);
-
-  return {
-    backtestResult,
-    selectedTradeId,
-    enrichedTrades,
-    signalLog,
-    timingAnalysis,
-    timingInsights,
-    signalContribution,
-    agentAlpha,
-    whatIfHistory,
-    loading,
-    errors,
-    setResult,
-    selectTrade,
-    loadTradeReplay,
-    loadSignalLog,
-    loadTimingAnalysis,
-    loadSignalContribution,
-    loadAgentAlpha,
-    executeWhatIf,
-    clearWhatIfHistory,
-  };
-}
+  clearWhatIfHistory: () => set({ whatIfHistory: [] }),
+}));
 
 function buildWhatIfLabel(params: WhatIfParams): string {
   const mods = params.modifications;
@@ -232,5 +244,3 @@ function buildWhatIfLabel(params: WhatIfParams): string {
   if (mods.position_size) parts.push(`Size: ${mods.position_size}`);
   return parts.length > 0 ? parts.join(', ') : 'Custom scenario';
 }
-
-export type ForensicsStore = ReturnType<typeof useForensicsStore>;

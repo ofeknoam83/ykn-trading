@@ -74,6 +74,7 @@ interface ScannerStore {
   dismissAnomaly: (id: string) => void;
   setAnomalyConfig: (config: AnomalyConfig) => void;
 
+  setAlerts: (alerts: ScanAlert[]) => void;
   addAlert: (alert: ScanAlert) => void;
   markAlertRead: (id: string) => void;
   markAllAlertsRead: () => void;
@@ -221,6 +222,11 @@ export const useScannerStore = create<ScannerStore>((set) => ({
     })),
   setAnomalyConfig: (config) => set({ anomalyConfig: config }),
 
+  setAlerts: (alerts) =>
+    set(() => ({
+      alerts,
+      unreadAlertCount: alerts.filter((a) => !a.readAt).length,
+    })),
   addAlert: (alert) =>
     set((state) => ({
       alerts: [alert, ...state.alerts].slice(0, 200),

@@ -3,7 +3,7 @@ import { useScannerStore } from '../stores/scannerStore';
 import * as scannerApi from '../../../api/scannerApi';
 
 export function useScanAlerts() {
-  const { alerts, unreadAlertCount, addAlert, markAlertRead, markAllAlertsRead } =
+  const { alerts, unreadAlertCount, setAlerts, markAlertRead, markAllAlertsRead } =
     useScannerStore();
   const [loading, setLoading] = useState(false);
 
@@ -11,16 +11,13 @@ export function useScanAlerts() {
     setLoading(true);
     try {
       const { alerts: fetchedAlerts } = await scannerApi.getAlerts();
-      // Populate store from server
-      for (const alert of fetchedAlerts) {
-        addAlert(alert);
-      }
+      setAlerts(fetchedAlerts);
     } catch {
       // silently fail
     } finally {
       setLoading(false);
     }
-  }, [addAlert]);
+  }, [setAlerts]);
 
   const handleMarkRead = useCallback(async (id: string) => {
     markAlertRead(id);

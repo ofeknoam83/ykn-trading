@@ -9,7 +9,7 @@ export function useSentimentAlerts() {
   useEffect(() => {
     getSentimentAlerts()
       .then((data) => {
-        data.alerts.forEach((a) => useSentimentStore.getState().addSentimentAlert(a));
+        useSentimentStore.getState().setSentimentAlerts(data.alerts);
       })
       .catch(() => {});
   }, []);

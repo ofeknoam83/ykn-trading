@@ -90,6 +90,7 @@ interface SentimentStore {
 
   setConvergenceAlerts: (alerts: CompositeSentiment[]) => void;
 
+  setSentimentAlerts: (alerts: SentimentAlert[]) => void;
   addSentimentAlert: (alert: SentimentAlert) => void;
   markSentimentAlertRead: (id: string) => void;
   setSentimentWatchlist: (watchlist: WatchlistEntry[]) => void;
@@ -168,6 +169,11 @@ export const useSentimentStore = create<SentimentStore>((set) => ({
 
   setConvergenceAlerts: (alerts) => set({ convergenceAlerts: alerts }),
 
+  setSentimentAlerts: (alerts) =>
+    set(() => ({
+      sentimentAlerts: alerts,
+      unreadSentimentAlertCount: alerts.filter((a) => !a.readAt).length,
+    })),
   addSentimentAlert: (alert) =>
     set((state) => ({
       sentimentAlerts: [alert, ...state.sentimentAlerts].slice(0, 200),

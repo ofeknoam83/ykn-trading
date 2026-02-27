@@ -9,12 +9,13 @@ export function useScanWebSocket(scanId: string | null) {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectAttempt = useRef(0);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const disposedRef = useRef(false);
 
   const { updateResults, addAlert, addAnomaly, removeAnomaly, setMarketOverview } =
     useScannerStore();
 
   const connect = useCallback(() => {
-    if (!scanId) return;
+    if (!scanId || disposedRef.current) return;
 
     try {
       const ws = new WebSocket(`${WS_BASE}/scanner`);
@@ -66,6 +67,7 @@ export function useScanWebSocket(scanId: string | null) {
       };
 
       ws.onclose = () => {
+        if (disposedRef.current) return;
         const delay = RECONNECT_DELAYS[Math.min(reconnectAttempt.current, RECONNECT_DELAYS.length - 1)];
         reconnectAttempt.current++;
         reconnectTimer.current = setTimeout(connect, delay);
@@ -80,11 +82,13 @@ export function useScanWebSocket(scanId: string | null) {
   }, [scanId, updateResults, addAlert, addAnomaly, removeAnomaly, setMarketOverview]);
 
   useEffect(() => {
+    disposedRef.current = false;
     connect();
     return () => {
+      disposedRef.current = true;
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
       if (wsRef.current) {
-        if (scanId) {
+        if (scanId && wsRef.current.readyState === WebSocket.OPEN) {
           wsRef.current.send(JSON.stringify({ type: 'scan.unsubscribe', scanId }));
         }
         wsRef.current.close();
