@@ -13,6 +13,14 @@ from app.config import settings
 async def lifespan(app: FastAPI):
     """Application lifespan: startup and shutdown."""
     yield
+    # Cleanup on shutdown
+    from app.core.redis import close_redis
+    await close_redis()
+    # Close CCXT exchange connections to prevent resource leaks
+    from app.providers.factory import _providers
+    for provider in _providers.values():
+        if hasattr(provider, "close"):
+            await provider.close()
 
 
 app = FastAPI(

@@ -1,6 +1,6 @@
 """CCXT provider for crypto."""
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 import pandas as pd
 
@@ -29,6 +29,15 @@ class CCXTProvider:
         if self._exchange is None:
             self._exchange = _get_ccxt_exchange()
 
+    async def close(self):
+        """Close the CCXT exchange connection to prevent resource leaks."""
+        if self._exchange is not None:
+            try:
+                await self._exchange.close()
+            except Exception:
+                pass
+            self._exchange = None
+
     async def get_quote(self, symbol: str) -> dict:
         """Get latest price. Symbol format: BTC/USDT."""
         self._ensure_exchange()
@@ -40,7 +49,7 @@ class CCXTProvider:
                 "change": float(ticker.get("change", 0)) if ticker.get("change") else None,
                 "change_percent": float(ticker.get("percentage", 0)) if ticker.get("percentage") else None,
                 "volume": int(ticker.get("baseVolume", 0)) if ticker.get("baseVolume") else None,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         except Exception as e:
             return {"symbol": symbol, "price": 0.0, "error": str(e)}

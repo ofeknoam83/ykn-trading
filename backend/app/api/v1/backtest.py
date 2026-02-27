@@ -2,10 +2,10 @@
 
 from datetime import date, timedelta
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from app.core.jobs import create_job, get_job, set_job_result, set_job_failed, JobStatus
+from app.core.jobs import create_job, get_job, update_job, set_job_result, set_job_failed, JobStatus
 from app.providers.factory import get_provider
 from app.providers.base import AssetClass
 from app.backtest.vectorbt_engine import run_backtest, VBT_AVAILABLE
@@ -45,10 +45,11 @@ async def run_backtest_request(req: BacktestRequest):
 
     async def _run():
         try:
+            update_job(job_id, status=JobStatus.RUNNING)
             provider = get_provider(None)
             df = await provider.get_historical(req.symbol, req.start, req.end, req.interval)
-            if df.empty or "close" not in df.columns:
-                # Normalize column names
+            if not df.empty and "close" not in df.columns:
+                # Normalize column names (YFinance returns capitalized names)
                 cols = {"Close": "close", "Open": "open", "High": "high", "Low": "low", "Volume": "volume"}
                 df = df.rename(columns=cols)
             if df.empty:
@@ -97,7 +98,7 @@ async def get_backtest_result(run_id: str):
     """Get backtest result by job id."""
     job = get_job(run_id)
     if not job:
-        return {"error": "Not found"}
+        raise HTTPException(status_code=404, detail="Backtest run not found")
     if job["status"] != JobStatus.COMPLETED:
         return {"job_id": run_id, "status": job["status"], "result": job.get("result"), "error": job.get("error")}
     return {"job_id": run_id, "status": job["status"], "result": job["result"]}

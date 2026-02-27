@@ -53,7 +53,8 @@ class YFinanceProvider:
             if df.empty:
                 return pd.DataFrame()
             df = df.reset_index()
-            df = df.rename(columns={"Date": "bucket"})
+            # YFinance uses "Date" for daily, "Datetime" for intraday
+            df = df.rename(columns={"Date": "bucket", "Datetime": "bucket"})
             df["symbol"] = symbol
             return df[["symbol", "Open", "High", "Low", "Close", "Volume", "bucket"]].rename(
                 columns={"Open": "open", "High": "high", "Low": "low", "Close": "close", "Volume": "volume"}
