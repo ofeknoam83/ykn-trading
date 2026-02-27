@@ -101,7 +101,17 @@ export const useBacktestStore = create<BacktestStoreState>((set) => ({
   fetchLibrary: async (filters) => {
     try {
       const { entries, total } = await getLibrary(filters);
-      set({ libraryEntries: entries, libraryTotal: total });
+      // Append for page > 1 (load more), replace for page 1 or new filters
+      const page = filters.page ?? 1;
+      if (page > 1) {
+        set((state) => {
+          const existingIds = new Set(state.libraryEntries.map((e) => e.id));
+          const newEntries = entries.filter((e) => !existingIds.has(e.id));
+          return { libraryEntries: [...state.libraryEntries, ...newEntries], libraryTotal: total };
+        });
+      } else {
+        set({ libraryEntries: entries, libraryTotal: total });
+      }
     } catch { /* handle gracefully */ }
   },
 

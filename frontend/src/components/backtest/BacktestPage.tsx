@@ -102,6 +102,7 @@ export function BacktestPage() {
             entries={store.libraryEntries}
             total={store.libraryTotal}
             onFetch={store.fetchLibrary}
+            onEdit={store.updateLibraryEntry}
             onDelete={store.deleteFromLibrary}
             onCompare={handleCompare}
           />
