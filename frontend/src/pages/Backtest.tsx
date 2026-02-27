@@ -25,7 +25,7 @@ export function Backtest() {
       ? { start: state.start, end: state.end }
       : defaultRange
   );
-  const [interval, setInterval] = useState<'1m' | '5m' | '15m' | '1h' | '4h' | '1d'>('1d');
+  const [interval, setBarInterval] = useState<'1m' | '5m' | '15m' | '1h' | '4h' | '1d'>('1d');
   const [benchmark, setBenchmark] = useState('');
   const [makerFeeBps, setMakerFeeBps] = useState(0);
   const [takerFeeBps, setTakerFeeBps] = useState(10);
@@ -93,7 +93,7 @@ export function Backtest() {
           </label>
           <label>
             Interval
-            <IntervalPicker value={interval} onChange={setInterval} />
+            <IntervalPicker value={interval} onChange={setBarInterval} />
           </label>
           <label>
             Benchmark

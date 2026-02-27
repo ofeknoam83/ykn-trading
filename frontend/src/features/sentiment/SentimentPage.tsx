@@ -1,4 +1,5 @@
 import { useSentimentStore } from './stores/sentimentStore';
+import { useSentimentWebSocket } from './hooks/useSentimentWebSocket';
 import { SentimentDashboard } from './SentimentDashboard';
 import { NewsFeed } from './news/NewsFeed';
 import { SocialPulse } from './social/SocialPulse';
@@ -23,6 +24,9 @@ const NAV_ITEMS = [
 export function SentimentPage() {
   const activeView = useSentimentStore((s) => s.activeView);
   const setActiveView = useSentimentStore((s) => s.setActiveView);
+
+  // Connect real-time sentiment WebSocket for live updates
+  useSentimentWebSocket();
 
   return (
     <div className="sent-page">
