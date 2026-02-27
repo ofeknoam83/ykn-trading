@@ -6,6 +6,7 @@ import {
   unpinResult as apiUnpin,
   saveToLibrary as apiSave,
   getLibrary,
+  updateLibraryEntry as apiUpdateLibraryEntry,
   deleteLibraryEntry,
 } from '../api/backtestApi';
 
@@ -26,6 +27,7 @@ interface BacktestStoreState {
   addToComparison: (result: BacktestResult) => void;
   removeFromComparison: (resultId: string) => void;
   saveToLibrary: (resultId: string, name: string, notes?: string, tags?: string[]) => Promise<void>;
+  updateLibraryEntry: (id: string, update: { name?: string; notes?: string; tags?: string[] }) => Promise<void>;
   fetchLibrary: (filters: LibraryFilters) => Promise<void>;
   fetchPinnedResults: () => Promise<void>;
   deleteFromLibrary: (id: string) => Promise<void>;
@@ -83,6 +85,15 @@ export const useBacktestStore = create<BacktestStoreState>((set) => ({
       set((state) => ({
         libraryEntries: [entry, ...state.libraryEntries],
         libraryTotal: state.libraryTotal + 1,
+      }));
+    } catch { /* handle gracefully */ }
+  },
+
+  updateLibraryEntry: async (id, update) => {
+    try {
+      const updated = await apiUpdateLibraryEntry(id, update);
+      set((state) => ({
+        libraryEntries: state.libraryEntries.map((e) => (e.id === id ? updated : e)),
       }));
     } catch { /* handle gracefully */ }
   },

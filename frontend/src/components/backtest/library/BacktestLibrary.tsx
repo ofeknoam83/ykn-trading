@@ -9,11 +9,12 @@ interface BacktestLibraryProps {
   entries: LibraryEntry[];
   total: number;
   onFetch: (filters: LibraryFilters) => void;
+  onEdit?: (id: string, update: { name?: string; notes?: string; tags?: string[] }) => void;
   onDelete: (id: string) => void;
   onCompare: (result: BacktestResult) => void;
 }
 
-export function BacktestLibrary({ entries, total, onFetch, onDelete, onCompare }: BacktestLibraryProps) {
+export function BacktestLibrary({ entries, total, onFetch, onEdit, onDelete, onCompare }: BacktestLibraryProps) {
   const [filters, setFilters] = useState<LibraryFilters>({ sort: 'recent', per_page: 20 });
   const [selectedResult, setSelectedResult] = useState<BacktestResult | null>(null);
 
@@ -72,6 +73,7 @@ export function BacktestLibrary({ entries, total, onFetch, onDelete, onCompare }
                 onView={() => handleView(entry)}
                 onCompare={() => handleCompare(entry)}
                 onReRun={() => handleReRun(entry)}
+                onEdit={onEdit ? (update) => onEdit(entry.id, update) : undefined}
                 onDelete={() => {
                   if (confirm(`Delete "${entry.name}" from library?`)) {
                     onDelete(entry.id);

@@ -8,6 +8,7 @@ import { SignalSummaryStats } from './SignalSummaryStats';
 interface SignalTimelineProps {
   result: BacktestResult;
   signalLog: BacktestSignalLog | null;
+  signalSummary?: BacktestSignalLog['summary'] | null;
   selectedTradeId: string | null;
   loading: boolean;
   error: string | null;
@@ -20,6 +21,7 @@ type FilterCategory = 'all' | SignalOutcome;
 export function SignalTimeline({
   result,
   signalLog,
+  signalSummary,
   selectedTradeId,
   loading,
   error,
@@ -167,8 +169,8 @@ export function SignalTimeline({
         )}
       </div>
 
-      {/* Summary */}
-      <SignalSummaryStats summary={signalLog.summary} />
+      {/* Summary - prefer separately-fetched summary if available */}
+      <SignalSummaryStats summary={signalSummary ?? signalLog.summary} />
     </div>
   );
 }

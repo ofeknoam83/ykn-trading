@@ -7,7 +7,7 @@ import type {
   BacktestResult,
 } from '../../../types/backtest';
 
-import { runOptimizer, getBacktestResult } from '../../../api/backtestApi';
+import { runOptimizer, getBacktestResult, parseOptimizerResult } from '../../../api/backtestApi';
 import { useJob } from '../../../hooks/useJobs';
 import { WorkbenchConfigPanel } from '../workbench/WorkbenchConfigPanel';
 import { OptimizerConfig } from './OptimizerConfig';
@@ -62,7 +62,7 @@ export function ParameterOptimizer({ onCompare, onPin }: ParameterOptimizerProps
       }
     }
     if (jobState.status === 'completed' && jobState.result) {
-      setOptimizerResult(jobState.result as OptimizerResult);
+      setOptimizerResult(parseOptimizerResult(jobState.result));
       setJobId(null);
     }
     if (jobState.status === 'failed') {

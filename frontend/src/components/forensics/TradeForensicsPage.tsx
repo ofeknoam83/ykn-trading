@@ -57,16 +57,27 @@ export function TradeForensicsPage({ result, initialTradeId }: TradeForensicsPag
 
   // Load data based on active tab
   useEffect(() => {
-    if (activeTab === 'signals') store.loadSignalLog();
+    if (activeTab === 'signals') {
+      store.loadSignalLog();
+      store.loadSignalSummary();
+    }
     if (activeTab === 'timing') store.loadTimingAnalysis();
     if (activeTab === 'contribution') store.loadSignalContribution();
     if (activeTab === 'agent') store.loadAgentAlpha();
   }, [activeTab]);
 
-  // Load trade replay when trade is selected
+  // Load trade replay and news context when trade is selected
   useEffect(() => {
     if (store.selectedTradeId && activeTab === 'replay') {
       store.loadTradeReplay(store.selectedTradeId);
+      store.loadTradeNews(store.selectedTradeId);
+    }
+  }, [store.selectedTradeId, activeTab]);
+
+  // Load per-trade agent forensics when viewing agent tab
+  useEffect(() => {
+    if (store.selectedTradeId && activeTab === 'agent') {
+      store.loadAgentForensics(store.selectedTradeId);
     }
   }, [store.selectedTradeId, activeTab]);
 
@@ -105,6 +116,12 @@ export function TradeForensicsPage({ result, initialTradeId }: TradeForensicsPag
   const enrichedTrade = store.selectedTradeId
     ? store.enrichedTrades[store.selectedTradeId] ?? null
     : null;
+  const newsContext = store.selectedTradeId
+    ? store.tradeNews[store.selectedTradeId] ?? null
+    : null;
+  const agentForensicsData = store.selectedTradeId
+    ? store.agentForensics[store.selectedTradeId] ?? null
+    : null;
 
   return (
     <div className="tf-page">
@@ -135,6 +152,8 @@ export function TradeForensicsPage({ result, initialTradeId }: TradeForensicsPag
               result={result}
               trade={selectedTrade}
               enrichedTrade={enrichedTrade}
+              entryNews={newsContext?.entry_news ?? []}
+              exitNews={newsContext?.exit_news ?? []}
               loading={store.loading.trades}
               error={store.errors.tradeReplay ?? null}
             />
@@ -144,6 +163,7 @@ export function TradeForensicsPage({ result, initialTradeId }: TradeForensicsPag
             <SignalTimeline
               result={result}
               signalLog={store.signalLog}
+              signalSummary={store.signalSummary}
               selectedTradeId={store.selectedTradeId}
               loading={store.loading.signals}
               error={store.errors.signals ?? null}
@@ -190,6 +210,7 @@ export function TradeForensicsPage({ result, initialTradeId }: TradeForensicsPag
               trade={selectedTrade}
               enrichedTrade={enrichedTrade}
               agentAlpha={store.agentAlpha}
+              agentForensicsData={agentForensicsData}
               loading={store.loading.agentAlpha}
               error={store.errors.agentAlpha ?? null}
             />

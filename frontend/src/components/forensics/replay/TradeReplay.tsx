@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { BacktestResult, TradeRecord } from '../../../types/backtest';
-import type { EnrichedTradeRecord, TradeReplayFrame } from '../../../types/forensics';
+import type { EnrichedTradeRecord, TradeReplayFrame, NewsHeadline } from '../../../types/forensics';
 import { ReplayChart } from './ReplayChart';
 import { IndicatorValuesPanel } from './IndicatorValuesPanel';
 import { NewsContextPanel } from './NewsContextPanel';
@@ -10,11 +10,13 @@ interface TradeReplayProps {
   result: BacktestResult;
   trade: TradeRecord | null;
   enrichedTrade: EnrichedTradeRecord | null;
+  entryNews?: NewsHeadline[];
+  exitNews?: NewsHeadline[];
   loading: boolean;
   error: string | null;
 }
 
-export function TradeReplay({ trade, enrichedTrade, loading, error }: TradeReplayProps) {
+export function TradeReplay({ trade, enrichedTrade, entryNews = [], exitNews = [], loading, error }: TradeReplayProps) {
   const [playbackIndex, setPlaybackIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
@@ -213,8 +215,8 @@ export function TradeReplay({ trade, enrichedTrade, loading, error }: TradeRepla
         <NewsContextPanel
           entryDate={trade.entry_date}
           exitDate={trade.exit_date}
-          entryNews={[]}
-          exitNews={[]}
+          entryNews={entryNews}
+          exitNews={exitNews}
         />
       </div>
 
