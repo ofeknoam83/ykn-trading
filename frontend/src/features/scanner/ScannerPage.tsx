@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { ScannerDashboard } from './ScannerDashboard';
 import { ScanBuilder } from './builder/ScanBuilder';
 import { ScanResultsView } from './results/ScanResultsView';
@@ -10,6 +10,8 @@ import { AlertDropdown } from './alerts/AlertDropdown';
 import { useScannerStore } from './stores/scannerStore';
 import { useScanAlerts } from './hooks/useScanAlerts';
 import { useAnomalyWebSocket } from './hooks/useAnomalyWebSocket';
+import { useScanWebSocket } from './hooks/useScanWebSocket';
+import { useScanEngine } from './hooks/useScanEngine';
 import './scanner.css';
 
 type ScannerView = 'dashboard' | 'scan' | 'library' | 'templates';
@@ -17,14 +19,26 @@ type ScannerView = 'dashboard' | 'scan' | 'library' | 'templates';
 export function ScannerPage() {
   const [view, setView] = useState<ScannerView>('dashboard');
   const { activeScan, scanStatus, quickViewOpen, alerts, unreadAlertCount } = useScannerStore();
-  const { markRead, markAllRead } = useScanAlerts();
+  const { fetchAlerts, markRead, markAllRead } = useScanAlerts();
+  const { loadScanResults } = useScanEngine();
   const [alertDropdownOpen, setAlertDropdownOpen] = useState(false);
 
-  // Subscribe to anomaly feed
+  // Subscribe to scan results and anomaly feeds via WebSocket
+  useScanWebSocket(activeScan?.id ?? null);
   useAnomalyWebSocket();
 
+  // Fetch historical alerts on mount
+  useEffect(() => {
+    fetchAlerts();
+  }, [fetchAlerts]);
+
   const handleNewScan = () => setView('scan');
-  const handleSelectScan = () => setView('scan');
+  const handleSelectScan = useCallback((scanId?: string) => {
+    if (scanId) {
+      loadScanResults(scanId);
+    }
+    setView('scan');
+  }, [loadScanResults]);
   const handleOpenLibrary = () => setView('library');
   const handleOpenTemplates = () => setView('templates');
   const handleBackToDashboard = () => setView('dashboard');
@@ -42,7 +56,7 @@ export function ScannerPage() {
           </button>
           <button
             className={`sc-toolbar-btn ${view === 'scan' ? 'sc-toolbar-btn--active' : ''}`}
-            onClick={handleSelectScan}
+            onClick={() => handleSelectScan()}
           >
             {activeScan ? activeScan.name : 'Active Scan'}
           </button>

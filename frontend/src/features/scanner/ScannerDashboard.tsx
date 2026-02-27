@@ -14,7 +14,7 @@ interface ScannerDashboardProps {
 }
 
 export function ScannerDashboard({ onNewScan, onSelectScan, onOpenTemplates }: ScannerDashboardProps) {
-  const { setMarketOverview, setActiveScanSummaries, setSavedScans } = useScannerStore();
+  const { setMarketOverview, setActiveScanSummaries, setSavedScans, addAnomaly } = useScannerStore();
 
   // Fetch dashboard data on mount
   useEffect(() => {
@@ -40,8 +40,12 @@ export function ScannerDashboard({ onNewScan, onSelectScan, onOpenTemplates }: S
       })
       .catch(() => {});
 
-    scannerApi.getAnomalies().catch(() => {});
-  }, [setMarketOverview, setActiveScanSummaries, setSavedScans]);
+    scannerApi.getAnomalies()
+      .then((anomalies) => {
+        anomalies.forEach((a) => addAnomaly(a));
+      })
+      .catch(() => {});
+  }, [setMarketOverview, setActiveScanSummaries, setSavedScans, addAnomaly]);
 
   return (
     <div className="sc-dashboard">

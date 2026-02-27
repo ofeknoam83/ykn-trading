@@ -30,7 +30,7 @@ export function WorkbenchConfigPanel({ onRun, running, children }: WorkbenchConf
   const [strategyType, setStrategyType] = useState('sma_crossover');
   const [assets, setAssets] = useState<string[]>(['SPY']);
   const [dateRange, setDateRange] = useState<DateRange>(defaultRange);
-  const [interval, setInterval] = useState<'1m' | '5m' | '15m' | '1h' | '4h' | '1d'>('1d');
+  const [interval, setBarInterval] = useState<'1m' | '5m' | '15m' | '1h' | '4h' | '1d'>('1d');
   const [benchmark, setBenchmark] = useState('SPY');
   const [makerBps, setMakerBps] = useState(0);
   const [takerBps, setTakerBps] = useState(10);
@@ -98,7 +98,7 @@ export function WorkbenchConfigPanel({ onRun, running, children }: WorkbenchConf
 
       <div className="bt-config-section">
         <label className="bt-config-label">Interval</label>
-        <IntervalPicker value={interval} onChange={setInterval} />
+        <IntervalPicker value={interval} onChange={setBarInterval} />
       </div>
 
       <div className="bt-config-section">
