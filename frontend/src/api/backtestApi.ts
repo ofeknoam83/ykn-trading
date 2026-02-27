@@ -65,34 +65,75 @@ export function normalizeJobResult(
       duration_days: number;
       fees: number;
     }>;
+    drawdown_series?: Array<{ date: string; drawdown_pct: number; underwater_days: number }>;
+    top_drawdowns?: Array<{
+      start_date: string;
+      bottom_date: string;
+      recovery_date: string | null;
+      depth_pct: number;
+      duration_days: number;
+      recovery_days: number | null;
+    }>;
+    monthly_returns?: Array<{ year: number; month: number; return_pct: number }>;
+    config?: {
+      strategy_type?: string;
+      strategy_config?: Record<string, unknown>;
+      assets?: string[];
+      date_range?: { start: string; end: string };
+      interval?: string;
+      benchmark?: string;
+      fees?: { maker_bps: number; taker_bps: number };
+    };
   },
   id: string
 ): BacktestResult {
   const strategyCurve = raw.equity_curve ?? {};
   const benchmarkCurve = raw.benchmark_curve ?? {};
-  const equitySeries = Object.keys(strategyCurve)
-    .map((dateKey) => ({
-      date: String(dateKey).slice(0, 10),
+
+  // Build drawdown lookup from server-computed series
+  const ddLookup: Record<string, number> = {};
+  if (Array.isArray(raw.drawdown_series)) {
+    for (const d of raw.drawdown_series) {
+      ddLookup[d.date] = d.drawdown_pct;
+    }
+  }
+
+  // Compute drawdown from equity if server didn't provide it
+  const sortedDates = Object.keys(strategyCurve).sort();
+  if (Object.keys(ddLookup).length === 0 && sortedDates.length > 0) {
+    let peak = -Infinity;
+    for (const dateKey of sortedDates) {
+      const val = strategyCurve[dateKey];
+      peak = Math.max(peak, val);
+      ddLookup[dateKey.slice(0, 10)] = peak > 0 ? (val - peak) / peak : 0;
+    }
+  }
+
+  const equitySeries = sortedDates.map((dateKey) => {
+    const dk = String(dateKey).slice(0, 10);
+    return {
+      date: dk,
       strategy_value: strategyCurve[dateKey],
       benchmark_value: benchmarkCurve[dateKey] ?? strategyCurve[dateKey],
-      drawdown_pct: 0,
-    }))
-    .sort((a, b) => a.date.localeCompare(b.date));
+      drawdown_pct: ddLookup[dk] ?? 0,
+    };
+  });
 
   const m = raw.metrics ?? {};
+  const rawConfig = raw.config;
   return {
     id,
     name: `${raw.symbol ?? 'Backtest'} ${new Date().toLocaleDateString()}`,
     created_at: new Date().toISOString(),
     status: 'completed',
     config: {
-      strategy_type: 'sma_crossover',
-      strategy_config: {},
-      assets: [raw.symbol ?? 'SPY'],
-      date_range: { start: '', end: '' },
-      interval: '1d',
-      benchmark: raw.benchmark ?? 'SPY',
-      fees: { maker_bps: 0, taker_bps: 0 },
+      strategy_type: rawConfig?.strategy_type ?? 'sma_crossover',
+      strategy_config: rawConfig?.strategy_config ?? {},
+      assets: rawConfig?.assets ?? [raw.symbol ?? 'SPY'],
+      date_range: rawConfig?.date_range ?? { start: '', end: '' },
+      interval: rawConfig?.interval ?? '1d',
+      benchmark: rawConfig?.benchmark ?? raw.benchmark ?? 'SPY',
+      fees: rawConfig?.fees ?? { maker_bps: 0, taker_bps: 0 },
     },
     equity_curve: equitySeries,
     trades: Array.isArray(raw.trades) ? raw.trades : [],
@@ -119,9 +160,9 @@ export function normalizeJobResult(
       skewness: m.skewness ?? 0,
       kurtosis: m.kurtosis ?? 0,
     },
-    monthly_returns: [],
-    drawdown_series: [],
-    top_drawdowns: [],
+    monthly_returns: Array.isArray(raw.monthly_returns) ? raw.monthly_returns : [],
+    drawdown_series: Array.isArray(raw.drawdown_series) ? raw.drawdown_series : [],
+    top_drawdowns: Array.isArray(raw.top_drawdowns) ? raw.top_drawdowns : [],
   };
 }
 
