@@ -52,17 +52,23 @@ export function Agents() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     if (selectedId) {
       getAgent(selectedId).then((a) => {
+        if (cancelled) return;
         setEditing(a);
         setWorkflow(a.workflow ?? createDefaultWorkflow());
-      }).catch(() => setEditing(null));
-      getAgentRuns(selectedId).then((r) => setRuns(r.runs || [])).catch(() => setRuns([]));
+      }).catch(() => { if (!cancelled) setEditing(null); });
+      getAgentRuns(selectedId).then((r) => {
+        if (cancelled) return;
+        setRuns(r.runs || []);
+      }).catch(() => { if (!cancelled) setRuns([]); });
     } else {
       setEditing(null);
       setRuns([]);
       setWorkflow(createDefaultWorkflow());
     }
+    return () => { cancelled = true; };
   }, [selectedId]);
 
   useEffect(() => {

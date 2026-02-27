@@ -1,7 +1,7 @@
 """Background job management."""
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
@@ -25,7 +25,7 @@ def create_job(job_type: str) -> str:
         "id": job_id,
         "type": job_type,
         "status": JobStatus.PENDING,
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
         "progress": 0,
         "eta_seconds": None,
         "result": None,

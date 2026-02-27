@@ -1,7 +1,7 @@
 """Paper broker - simulated trading with Redis storage."""
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.config import settings
 
@@ -38,15 +38,26 @@ class PaperBroker:
         price = 100.0  # In real impl, get from quote
         self._positions.setdefault(symbol, {"qty": 0, "avg_price": 0})
         p = self._positions[symbol]
+        old_qty = p["qty"]
+        old_avg = p["avg_price"]
         sign = 1 if side.lower() == "buy" else -1
-        new_qty = p["qty"] + sign * qty
+        new_qty = old_qty + sign * qty
         cost = qty * price * sign
         self._cash -= cost
         if new_qty == 0:
             del self._positions[symbol]
         else:
+            # Compute weighted average price when adding to a position
+            if sign > 0 and old_qty >= 0 and new_qty > 0:
+                # Buying more of a long position
+                p["avg_price"] = (old_qty * old_avg + qty * price) / new_qty
+            elif sign < 0 and old_qty <= 0 and new_qty < 0:
+                # Selling more of a short position
+                p["avg_price"] = (abs(old_qty) * old_avg + qty * price) / abs(new_qty)
+            else:
+                # Reducing or flipping position - use new fill price
+                p["avg_price"] = price
             p["qty"] = new_qty
-            p["avg_price"] = price
         order = {
             "id": order_id,
             "symbol": symbol,
@@ -55,7 +66,7 @@ class PaperBroker:
             "filled_qty": qty,
             "status": "filled",
             "filled_avg_price": price,
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
         }
         self._orders[order_id] = order
         return order

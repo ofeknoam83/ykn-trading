@@ -76,21 +76,56 @@ async def run_expert(expert_slug: str, user_input: str) -> str:
 
 
 async def _run_openai(system_prompt: str, user_message: str) -> str:
-    """Run with OpenAI GPT-4."""
+    """Run with OpenAI GPT-4. Tool-call loop until final text response."""
     try:
+        import json as _json
         from openai import AsyncOpenAI
         client = AsyncOpenAI(api_key=settings.openai_api_key)
-        resp = await client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message},
-            ],
-            tools=[{"type": "function", "function": t} for t in TOOLS_SCHEMA],
-        )
-        if resp.choices:
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message},
+        ]
+        # Convert Anthropic tool format (input_schema) to OpenAI format (parameters)
+        openai_tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": t["name"],
+                    "description": t.get("description", ""),
+                    "parameters": t.get("input_schema", {"type": "object", "properties": {}}),
+                },
+            }
+            for t in TOOLS_SCHEMA
+        ]
+        max_iterations = 10
+
+        for _ in range(max_iterations):
+            resp = await client.chat.completions.create(
+                model="gpt-4o",
+                messages=messages,
+                tools=openai_tools,
+            )
+            if not resp.choices:
+                return str(resp)
             c = resp.choices[0].message
-            return c.content or str(c)
-        return str(resp)
+
+            # If no tool calls, return text
+            if not c.tool_calls:
+                return c.content or str(c)
+
+            # Execute tool calls and add results
+            messages.append(c)
+            for tool_call in c.tool_calls:
+                result = await _execute_tool(
+                    tool_call.function.name,
+                    _json.loads(tool_call.function.arguments or "{}"),
+                )
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": result,
+                })
+
+        return "Max tool iterations reached."
     except Exception as e:
         return f"[OpenAI error: {e}]"
