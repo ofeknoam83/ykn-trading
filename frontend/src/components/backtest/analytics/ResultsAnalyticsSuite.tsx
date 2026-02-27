@@ -42,7 +42,7 @@ export function ResultsAnalyticsSuite({
   const visibleTabs = TABS.filter((tab) => {
     if (tab.key === 'regimes' && !showRegime) return false;
     if (tab.key === 'montecarlo' && !showMonteCarlo && !result.monte_carlo) return false;
-    if (tab.key === 'forensics' && result.trades.length === 0) return false;
+    if (tab.key === 'forensics' && (result.trades?.length ?? 0) === 0) return false;
     return true;
   });
 

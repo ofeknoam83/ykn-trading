@@ -8,18 +8,21 @@ from pydantic import BaseModel
 from app.core.jobs import create_job, get_job, update_job, set_job_result, set_job_failed, JobStatus
 from app.providers.factory import get_provider
 from app.providers.base import AssetClass
-from app.backtest.vectorbt_engine import run_backtest, VBT_AVAILABLE
+from app.backtest.vectorbt_engine import run_backtest, trades_to_records, VBT_AVAILABLE
 
 router = APIRouter()
 
 
 @router.get("/benchmarks/list")  # Must be before /{run_id}
 async def list_benchmarks():
-    """List available benchmarks."""
+    """List available benchmarks (buy-and-hold comparison)."""
     return {
         "benchmarks": [
-            {"id": "SPY", "name": "S&P 500", "symbol": "SPY"},
-            {"id": "QQQ", "name": "NASDAQ 100", "symbol": "QQQ"},
+            {"id": "SPY", "name": "S&P 500 (SPY)", "symbol": "SPY"},
+            {"id": "QQQ", "name": "NASDAQ 100 (QQQ)", "symbol": "QQQ"},
+            {"id": "IWM", "name": "Russell 2000 (IWM)", "symbol": "IWM"},
+            {"id": "DIA", "name": "Dow Jones (DIA)", "symbol": "DIA"},
+            {"id": "VTI", "name": "US Total Market (VTI)", "symbol": "VTI"},
         ]
     }
 
@@ -33,6 +36,7 @@ class BacktestRequest(BaseModel):
     interval: str = "1d"
     maker_fee_bps: float = 0
     taker_fee_bps: float = 0
+    benchmark: str | None = None  # e.g. SPY, QQQ - compare strategy to buy-and-hold
     # Simplified: use SMA crossover. strategy_id could extend later
     fast_period: int = 10
     slow_period: int = 30
@@ -76,13 +80,39 @@ async def run_backtest_request(req: BacktestRequest):
                 req.maker_fee_bps,
                 req.taker_fee_bps,
             )
+            trades_list = trades_to_records(result.trades, req.symbol)
+
+            # Build equity curve with optional benchmark
+            strategy_equity = result.equity_curve.dropna()
+            strategy_curve = {str(k)[:10]: float(v) for k, v in strategy_equity.astype(float).items()} if not strategy_equity.empty else {}
+            benchmark_curve: dict[str, float] = {}
+            if req.benchmark and req.benchmark.strip():
+                try:
+                    bench_df = await provider.get_historical(req.benchmark.strip(), req.start, req.end, req.interval)
+                    if not bench_df.empty:
+                        if "close" not in bench_df.columns and "Close" in bench_df.columns:
+                            bench_df = bench_df.rename(columns={"Close": "close", "Open": "open", "High": "high", "Low": "low", "Volume": "volume"})
+                        bench_close = bench_df.set_index("bucket")["close"] if "bucket" in bench_df.columns else bench_df["close"]
+                        bench_close = bench_close.dropna()
+                        if not bench_close.empty and len(strategy_equity) > 0:
+                            initial_strategy = float(strategy_equity.iloc[0])
+                            bench_return = bench_close / bench_close.iloc[0]
+                            bench_aligned = bench_return.reindex(strategy_equity.index).ffill().bfill()
+                            bc = bench_aligned.dropna().mul(initial_strategy).astype(float)
+                            benchmark_curve = {str(k)[:10]: float(v) for k, v in bc.items()}
+                except Exception:
+                    pass
+
             set_job_result(
                 job_id,
                 {
                     "symbol": req.symbol,
+                    "benchmark": req.benchmark or "",
                     "metrics": result.metrics,
-                    "equity_curve": result.equity_curve.dropna().astype(float).to_dict() if not result.equity_curve.empty else {},
-                    "trades_count": len(result.trades),
+                    "equity_curve": strategy_curve,
+                    "benchmark_curve": benchmark_curve,
+                    "trades_count": len(trades_list),
+                    "trades": trades_list,
                 },
             )
         except Exception as e:
@@ -91,6 +121,86 @@ async def run_backtest_request(req: BacktestRequest):
     import asyncio
     asyncio.create_task(_run())
     return {"job_id": job_id}
+
+
+@router.get("/pinned")  # /backtest/pinned - avoids conflict with /{run_id}
+async def get_pinned_results():
+    """Get pinned backtest results. Stub - returns empty list."""
+    return []
+
+
+@router.get("/results/pinned")  # alias for clients using /backtest/results/pinned
+async def get_pinned_results_alias():
+    """Get pinned backtest results (alias). Stub - returns empty list."""
+    return []
+
+
+@router.post("/optimize")
+async def run_optimizer(body: dict):
+    """Parameter optimization. Stub - returns job_id."""
+    from app.core.jobs import create_job
+    job_id = create_job("backtest_optimize")
+    return {"job_id": job_id}
+
+
+@router.post("/walk-forward")
+async def run_walk_forward(body: dict | None = None):
+    """Walk-forward analysis. Stub - returns job_id."""
+    from app.core.jobs import create_job
+    job_id = create_job("backtest_walk_forward")
+    return {"job_id": job_id}
+
+
+@router.post("/monte-carlo")
+async def run_monte_carlo(body: dict):
+    """Monte Carlo simulation. Stub - returns job_id."""
+    from app.core.jobs import create_job
+    job_id = create_job("backtest_monte_carlo")
+    return {"job_id": job_id}
+
+
+@router.post("/library")
+async def save_to_library(body: dict):
+    """Save result to library. Stub."""
+    return {"id": "stub", "result_id": body.get("result_id", ""), "name": body.get("name", ""), "notes": body.get("notes"), "tags": body.get("tags", []), "created_at": "2024-01-01T00:00:00Z", "config": {}, "summary_metrics": {}, "analysis": {}, "result_id": body.get("result_id", "")}
+
+
+@router.get("/library")
+async def get_library(
+    q: str | None = None,
+    type: str | None = None,
+    sort: str | None = None,
+    sharpe_min: float | None = None,
+    tag: str | None = None,
+    page: int = 1,
+    per_page: int = 20,
+):
+    """Get library entries. Stub - returns empty."""
+    return {"entries": [], "total": 0}
+
+
+@router.put("/library/{entry_id}")
+async def update_library_entry(entry_id: str, body: dict):
+    """Update library entry. Stub."""
+    return body
+
+
+@router.delete("/library/{entry_id}")
+async def delete_library_entry(entry_id: str):
+    """Delete library entry. Stub."""
+    return None
+
+
+@router.post("/results/{result_id}/pin")
+async def pin_result(result_id: str):
+    """Pin a result. Stub."""
+    return None
+
+
+@router.delete("/results/{result_id}/pin")
+async def unpin_result(result_id: str):
+    """Unpin a result. Stub."""
+    return None
 
 
 @router.get("/{run_id}")

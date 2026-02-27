@@ -10,18 +10,24 @@ export interface JobState {
   error: string | null;
 }
 
+/** When jobId is null, reset to idle so isRunning is false */
+const IDLE_STATE: JobState = {
+  id: null,
+  status: 'completed',
+  progress: 0,
+  eta_seconds: null,
+  result: null,
+  error: null,
+};
+
 export function useJob(jobId: string | null, pollInterval = 1500) {
-  const [state, setState] = useState<JobState>({
-    id: jobId,
-    status: 'pending',
-    progress: 0,
-    eta_seconds: null,
-    result: null,
-    error: null,
-  });
+  const [state, setState] = useState<JobState>(IDLE_STATE);
 
   useEffect(() => {
-    if (!jobId) return;
+    if (!jobId) {
+      setState(IDLE_STATE);
+      return;
+    }
 
     let cancelled = false;
 

@@ -183,7 +183,6 @@ export function ScanBuilder() {
           <button
             className="sc-run-btn"
             onClick={handleRunScan}
-            disabled={rootGroup.conditions.length === 0}
           >
             {mode === 'snapshot' ? 'Run Scan' : 'Start Monitoring'}
           </button>

@@ -1,0 +1,297 @@
+/* Light theme - overrides dark colors throughout the app */
+
+:root {
+  color-scheme: light;
+  --bg-page: #f6f8fa;
+  --bg-card: #ffffff;
+  --bg-hover: #f0f2f5;
+  --bg-input: #ffffff;
+  --border: #d0d7de;
+  --text: #1f2328;
+  --text-muted: #656d76;
+  --text-secondary: #57606a;
+  --accent: #0969da;
+  --success: #1a7f37;
+  --success-hover: #2da44e;
+  --danger: #cf222e;
+  --danger-hover: #a40e26;
+  --primary: #238636;
+  --primary-hover: #2ea043;
+  --warn: #9a6700;
+  --warn-bg: rgba(210, 153, 34, 0.15);
+  --danger-bg: rgba(248, 81, 73, 0.12);
+}
+
+body {
+  background-color: var(--bg-page) !important;
+  color: var(--text) !important;
+}
+
+/* Layout */
+.layout { background: var(--bg-page) !important; color: var(--text) !important; }
+.header { border-bottom-color: var(--border) !important; }
+.header nav a { color: var(--text-muted) !important; }
+.header nav a:hover, .header nav a.active { color: var(--accent) !important; }
+
+/* Cards & panels */
+.market-card, .news-panel, .result, .chart-container,
+.agent-form-panel, .agent-run-panel, .agent-runs-panel, .agent-workflow-panel,
+.step-config-panel, .llm-report, .account-card,
+.bt-config-panel, .bt-result-card, .bt-stability-card, .bt-dialog,
+.bt-analytics-suite, .bt-library-card, .bt-method-card,
+.bt-metric-card, .bt-stat-card, .bt-streak-card, .bt-job-inline,
+.bt-param-row, .bt-wf-timeline, .bt-significance-card,
+.tf-panel, .tf-trade-selector, .tf-chart-container, .tf-mini-chart,
+.tf-signal-card, .tf-signal-summary-stats, .tf-tweaker, .tf-comparison,
+.tf-whatif-history, .tf-score-card, .tf-histogram, .tf-return-scatter,
+.tf-mae-mfe, .tf-timing-table, .tf-timing-insights, .tf-correlation-matrix,
+.tf-individual-perf, .tf-ablation, .tf-pair-synergies, .tf-recommendations,
+.tf-agent-alpha, .tf-hold-analysis {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+/* Secondary backgrounds */
+.asset-picker .dropdown, .stp-dropdown,
+.wf-toolbar, .wf-reactflow, .wf-list-editor, .wf-run-mode,
+.bt-input, .bt-select, .bt-textarea, .wf-cron-input input,
+.react-flow__controls-button, .tf-sidebar {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+}
+
+/* Hover states */
+.news-item:hover, .asset-picker .dropdown li:hover,
+.market-card-link:hover .market-card,
+.agents-list button:hover, .agents-list button.active,
+.agent-tab:hover, .bt-tab:hover, .wf-toolbar-btn:hover,
+.wf-list-row-main:hover, .stp-option:hover, .bt-topn-row:hover,
+.tf-trade-item:hover, .tf-trade-selected, .tf-history-item:hover {
+  background: var(--bg-hover) !important;
+}
+
+/* Borders & dividers */
+.market-card .market-description, .news-item, .news-item-wrapper,
+.agents li, .portfolio li, .asset-picker .dropdown li,
+.date-range-picker .preset-btn, .news-tabs button, .llm-tabs button,
+.wf-condition-handles, .wf-list-row, .wf-list-branches,
+.scp-header, .scp-footer, .config-fieldset, .config-divider,
+.bt-tab-bar, .bt-config-divider, .bt-table th, .bt-table td,
+.bt-trades-table th, .bt-trades-table td, .bt-heatmap-table th,
+.bt-heatmap-table td, .wf-validation-banner,
+.tf-tab-bar, .tf-signal-card-header, .tf-signal-card-actions,
+.tf-comparison-table th {
+  border-color: var(--border) !important;
+}
+
+/* Text */
+.market-card .symbol, .market-card .market-description,
+.last-update, .news-item .source, .news-loading, .news-error,
+.expert-desc, .llm-intro, .strat-intro, .strategy-type-btn span,
+.bt-config-label, .bt-metric-label, .bt-stat-label, .bt-job-text,
+.wf-empty-state, .config-label, .stp-option-desc,
+.tf-detail-label, .tf-trade-side, .tf-trade-dates {
+  color: var(--text-muted) !important;
+}
+
+.market-card .market-name, .wf-node-label, .expert-prompt,
+.bt-result-name, .bt-hm-row-header, .tf-news-title {
+  color: var(--text) !important;
+}
+
+/* Inputs */
+.form input, .asset-picker input, .interval-picker, .exchange-picker,
+.benchmark-picker, .llm-form textarea, .order-form select,
+.agent-form input, .agent-form textarea, .config-field input,
+.config-field textarea, .config-field select, .wf-cron-input input,
+.wf-trigger-type-select, .wf-trigger-params input,
+.bt-input, .bt-select, .bt-textarea, .bt-trigger-config input {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+/* Buttons - primary (green) */
+.form button, .news-trade-btn, .paper-btn.active, .new-agent-btn,
+.scp-apply-btn, .stp-trigger, .bt-btn-run, .bt-btn-primary,
+.tf-pb-main {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: white !important;
+}
+
+.form button:hover, .news-trade-btn:hover, .scp-apply-btn:hover,
+.stp-trigger:hover, .bt-btn-primary:hover {
+  background: var(--primary-hover) !important;
+}
+
+/* Buttons - secondary */
+.date-range-picker .preset-btn, .news-tabs button, .llm-tabs button,
+.paper-btn, .prompt-toggle, .wf-toolbar-btn, .wf-mode-btn,
+.wf-interval-btn, .wf-run-mode-option, .bt-btn, .bt-action-btn,
+.bt-pagination button, .bt-pill, .bt-slice-selector .bt-pill {
+  background: var(--bg-hover) !important;
+  border-color: var(--border) !important;
+  color: var(--text-muted) !important;
+}
+
+.date-range-picker .preset-btn:hover, .news-tabs button:hover,
+.llm-tabs button.active, .news-tabs button.active,
+.wf-toolbar-btn:hover, .wf-interval-btn:hover, .wf-interval-btn.active,
+.wf-run-mode-option.active, .bt-tab:hover, .bt-tab-active,
+.bt-pill:hover, .bt-pill-active {
+  background: var(--accent) !important;
+  color: white !important;
+  border-color: var(--accent) !important;
+}
+
+.agents-list button:hover, .agents-list button.active,
+.wf-toolbar-btn:hover, .wf-interval-btn:hover {
+  color: white !important;
+}
+
+/* Accent / links */
+.back-link, .config-fieldset legend, .bt-config-section-title {
+  color: var(--accent) !important;
+}
+
+/* Success / positive */
+.change-up, .bt-metric-positive, .wf-branch-true, .wf-node-entry .wf-node-start-badge {
+  color: var(--success) !important;
+}
+
+.job-progress-fill, .bt-job-fill {
+  background: var(--success) !important;
+}
+
+/* Danger / negative */
+.change-down, .price-error, .news-error, .result .error, .chart-error,
+.form-actions .danger, .bt-metric-negative, .wf-branch-false {
+  color: var(--danger) !important;
+}
+
+/* Tabs */
+.agent-tab-active {
+  border-bottom-color: var(--accent) !important;
+  background: var(--bg-card) !important;
+  color: var(--text) !important;
+}
+
+.bt-tab-active {
+  border-bottom-color: var(--accent) !important;
+  background: var(--bg-card) !important;
+  color: var(--text) !important;
+}
+
+/* Strategy type & cards */
+.strategy-type-btn {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+.strategy-type-btn span {
+  color: var(--text-muted) !important;
+}
+
+.strategy-type-btn.active {
+  border-color: var(--accent) !important;
+  background: rgba(9, 105, 218, 0.08) !important;
+}
+
+/* Workflow nodes */
+.wf-node {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+.wf-node:hover { border-color: var(--accent) !important; }
+.wf-node-selected { box-shadow: 0 0 0 2px var(--accent) !important; }
+.wf-handle { background: var(--border) !important; border-color: var(--accent) !important; }
+.wf-handle:hover { background: var(--accent) !important; }
+.wf-edge-label { background: var(--bg-card) !important; border-color: var(--border) !important; color: var(--text) !important; }
+
+/* ReactFlow controls */
+.react-flow__minimap, .react-flow__controls { border-color: var(--border) !important; }
+.react-flow__controls-button {
+  background: var(--bg-hover) !important;
+  border-color: var(--border) !important;
+  fill: var(--text-muted) !important;
+}
+.react-flow__controls-button:hover {
+  background: var(--border) !important;
+  fill: var(--text) !important;
+}
+
+/* List rows */
+.wf-list-row { background: var(--bg-card) !important; border-color: var(--border) !important; }
+.wf-list-row-main:hover { background: var(--bg-hover) !important; }
+.wf-list-config-btn:hover { background: var(--bg-hover) !important; }
+
+/* Validation */
+.wf-validation-error { background: var(--danger-bg) !important; color: var(--danger) !important; }
+.wf-validation-warning { background: var(--warn-bg) !important; color: var(--warn) !important; }
+.wf-validation-error .wf-validation-level { background: var(--danger) !important; color: white !important; }
+.wf-validation-warning .wf-validation-level { background: var(--warn) !important; color: var(--bg-page) !important; }
+
+/* Radio, checkbox, toggle */
+.toggle-field span, .radio-option, .checkbox-option,
+.bt-checkbox-label, .bt-radio-label {
+  color: var(--text) !important;
+}
+
+/* Metric cards */
+.bt-metric-card, .bt-stat-card {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+}
+
+/* Tables */
+.bt-table th, .positions-table th, .orders-table th {
+  color: var(--text-muted) !important;
+}
+
+/* Empty states */
+.bt-empty, .bt-empty-workbench h3, .tf-empty-state {
+  color: var(--text-muted) !important;
+}
+
+.bt-empty-workbench h3 {
+  color: var(--text) !important;
+}
+
+/* Overlay */
+.bt-dialog-overlay {
+  background: rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Scanner page */
+.sc-toolbar {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+.sc-toolbar-btn { color: var(--text-muted) !important; border-color: var(--border) !important; }
+.sc-toolbar-btn:hover { color: var(--text) !important; border-color: var(--accent) !important; }
+.sc-toolbar-btn--active { color: var(--text) !important; background: var(--bg-hover) !important; border-color: var(--accent) !important; }
+.sc-toolbar-btn--primary { background: var(--primary) !important; border-color: var(--primary) !important; color: white !important; }
+.sc-toolbar-btn--primary:hover { background: var(--primary-hover) !important; }
+.sc-scan-list, .sc-anomaly-list, .sc-alert-list, .sc-detail-panel,
+.sc-config-panel, .sc-result-card, .sc-match-detail, .sc-quick-view-panel,
+.sc-empty-state, .sc-anomaly-card, .sc-alert-item {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+.sc-result-card:hover, .sc-anomaly-card:hover { border-color: var(--accent) !important; }
+.sc-input, .sc-select { background: var(--bg-input) !important; border-color: var(--border) !important; color: var(--text) !important; }
+
+/* DynamicForm (used in workflow editor, etc.) */
+.df-field, .df-select, .df-number-input, .df-text-input,
+.df-textarea, .df-select-option, .df-multi-option, .df-pill {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+.df-select-option:hover, .df-multi-option:hover { background: var(--bg-hover) !important; }
+.df-select-option-active { color: var(--accent) !important; }
+.df-submit { background: var(--primary) !important; color: white !important; }
+.df-submit:hover { background: var(--primary-hover) !important; }

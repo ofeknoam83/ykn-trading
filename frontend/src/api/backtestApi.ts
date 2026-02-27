@@ -12,14 +12,117 @@ import type {
 
 // ─── Single Backtest ───
 
+/** Map BacktestConfig to backend BacktestRequest format (symbol, start, end, etc.) */
+function toBacktestRequest(config: BacktestConfig) {
+  const symbol = config.assets?.[0] ?? 'SPY';
+  return {
+    symbol,
+    start: config.date_range.start,
+    end: config.date_range.end,
+    interval: config.interval ?? '1d',
+    maker_fee_bps: config.fees?.maker_bps ?? 0,
+    taker_fee_bps: config.fees?.taker_bps ?? 0,
+    benchmark: config.benchmark || null,
+    fast_period: (config.strategy_config?.fast_period as number) ?? 10,
+    slow_period: (config.strategy_config?.slow_period as number) ?? 30,
+  };
+}
+
 export async function runBacktestEnhanced(config: BacktestConfig): Promise<{ job_id: string }> {
-  const { data } = await api.post('/backtest/run', config);
+  const body = toBacktestRequest(config);
+  const { data } = await api.post('/backtest/run', body);
   return data;
 }
 
-export async function getBacktestResult(id: string): Promise<BacktestResult> {
-  const { data } = await api.get(`/backtest/results/${id}`);
-  return data;
+/** Fetch backtest result by job id. Backend stores result in job; returns raw shape. */
+export async function getBacktestResult(jobId: string): Promise<BacktestResult> {
+  const { data } = await api.get(`/backtest/${jobId}`);
+  if (data?.status !== 'completed' || !data?.result) {
+    throw new Error(data?.error ?? 'Backtest not ready');
+  }
+  return normalizeJobResult(data.result, jobId);
+}
+
+export function normalizeJobResult(
+  raw: {
+    symbol?: string;
+    benchmark?: string;
+    metrics?: Record<string, number>;
+    equity_curve?: Record<string, number>;
+    benchmark_curve?: Record<string, number>;
+    trades_count?: number;
+    trades?: Array<{
+      id: string;
+      symbol: string;
+      side: 'long' | 'short';
+      entry_date: string;
+      exit_date: string;
+      entry_price: number;
+      exit_price: number;
+      quantity: number;
+      pnl: number;
+      pnl_pct: number;
+      duration_days: number;
+      fees: number;
+    }>;
+  },
+  id: string
+): BacktestResult {
+  const strategyCurve = raw.equity_curve ?? {};
+  const benchmarkCurve = raw.benchmark_curve ?? {};
+  const equitySeries = Object.keys(strategyCurve)
+    .map((dateKey) => ({
+      date: String(dateKey).slice(0, 10),
+      strategy_value: strategyCurve[dateKey],
+      benchmark_value: benchmarkCurve[dateKey] ?? strategyCurve[dateKey],
+      drawdown_pct: 0,
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const m = raw.metrics ?? {};
+  return {
+    id,
+    name: `${raw.symbol ?? 'Backtest'} ${new Date().toLocaleDateString()}`,
+    created_at: new Date().toISOString(),
+    status: 'completed',
+    config: {
+      strategy_type: 'sma_crossover',
+      strategy_config: {},
+      assets: [raw.symbol ?? 'SPY'],
+      date_range: { start: '', end: '' },
+      interval: '1d',
+      benchmark: raw.benchmark ?? 'SPY',
+      fees: { maker_bps: 0, taker_bps: 0 },
+    },
+    equity_curve: equitySeries,
+    trades: Array.isArray(raw.trades) ? raw.trades : [],
+    metrics: {
+      total_return: m.total_return ?? 0,
+      annualized_return: m.annualized_return ?? 0,
+      sharpe_ratio: m.sharpe_ratio ?? 0,
+      sortino_ratio: m.sortino_ratio ?? 0,
+      calmar_ratio: m.calmar_ratio ?? 0,
+      max_drawdown: m.max_drawdown ?? 0,
+      max_drawdown_duration_days: m.max_drawdown_duration_days ?? 0,
+      profit_factor: m.profit_factor ?? 0,
+      win_rate: m.win_rate ?? 0,
+      avg_win: m.avg_win ?? 0,
+      avg_loss: m.avg_loss ?? 0,
+      total_trades: m.total_trades ?? raw.trades_count ?? 0,
+      best_trade: m.best_trade ?? 0,
+      worst_trade: m.worst_trade ?? 0,
+      avg_trade_duration_days: m.avg_trade_duration_days ?? 0,
+      volatility_annualized: m.volatility_annualized ?? 0,
+      beta: m.beta ?? 0,
+      alpha: m.alpha ?? 0,
+      information_ratio: m.information_ratio ?? 0,
+      skewness: m.skewness ?? 0,
+      kurtosis: m.kurtosis ?? 0,
+    },
+    monthly_returns: [],
+    drawdown_series: [],
+    top_drawdowns: [],
+  };
 }
 
 export async function getBacktestTrades(id: string, page = 1, perPage = 50) {
@@ -40,8 +143,12 @@ export async function unpinResult(id: string): Promise<void> {
 }
 
 export async function getPinnedResults(): Promise<BacktestResult[]> {
-  const { data } = await api.get('/backtest/results/pinned');
-  return data;
+  try {
+    const { data } = await api.get('/backtest/results/pinned');
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
 }
 
 // ─── Optimizer ───

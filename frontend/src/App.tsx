@@ -10,6 +10,7 @@ import { PortfolioOperationsCenter } from './components/portfolio/PortfolioOpera
 import { ScannerPage } from './features/scanner/ScannerPage';
 import { SentimentPage } from './features/sentiment/SentimentPage';
 import './App.css';
+import './theme-light.css';
 
 function App() {
   return (

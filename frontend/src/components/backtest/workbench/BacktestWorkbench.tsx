@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { BacktestConfig, BacktestResult } from '../../../types/backtest';
-import { runBacktestEnhanced, getBacktestResult } from '../../../api/backtestApi';
+import { runBacktestEnhanced, getBacktestResult, normalizeJobResult } from '../../../api/backtestApi';
 import { useJob } from '../../../hooks/useJobs';
 import { WorkbenchConfigPanel } from './WorkbenchConfigPanel';
 import { ResultCard } from './ResultCard';
@@ -30,41 +30,58 @@ export function BacktestWorkbench({
   onSelectResult,
 }: BacktestWorkbenchProps) {
   const [jobId, setJobId] = useState<string | null>(null);
+  const [runError, setRunError] = useState<string | null>(null);
   const jobState = useJob(jobId);
 
   const handleRun = useCallback(async (config: BacktestConfig) => {
+    setRunError(null);
     try {
       const { job_id } = await runBacktestEnhanced(config);
       setJobId(job_id);
-    } catch {
-      // Error handling done via job system
+    } catch (e: unknown) {
+      let msg = 'Failed to start backtest';
+      if (e && typeof e === 'object' && 'response' in e) {
+        const res = (e as { response?: { data?: unknown; status?: number } }).response;
+        if (res?.status === 422) msg = 'Invalid config (check date format and required fields)';
+        else if (res?.data && typeof res.data === 'object' && 'detail' in res.data) {
+          const d = String((res.data as { detail: unknown }).detail);
+          msg = d.length > 120 ? 'Validation error' : d;
+        }
+      } else if (e instanceof Error) msg = e.message;
+      setRunError(msg);
     }
   }, []);
 
   useEffect(() => {
-    if (jobState.status === 'completed' && jobState.result) {
-      const resultData = jobState.result as { result_id?: string };
+    if (jobState.status === 'completed' && jobState.result && jobId) {
+      setRunError(null);
+      const resultData = jobState.result as { result_id?: string; symbol?: string; metrics?: Record<string, number>; equity_curve?: Record<string, number>; trades_count?: number };
       if (resultData.result_id) {
         getBacktestResult(resultData.result_id).then((result) => {
           onAddResult(result);
           setJobId(null);
-        });
+        }).catch(() => setJobId(null));
       } else {
-        // Result is inline
-        onAddResult(jobState.result as BacktestResult);
+        onAddResult(normalizeJobResult(resultData, jobId));
         setJobId(null);
       }
     }
     if (jobState.status === 'failed') {
+      setRunError(jobState.error ?? 'Backtest failed');
       setJobId(null);
     }
-  }, [jobState.status, jobState.result, onAddResult]);
+  }, [jobState.status, jobState.result, jobState.error, jobId, onAddResult]);
 
   const isRunning = jobState.status === 'running' || jobState.status === 'pending';
 
   return (
     <div className="bt-workbench">
       <div className="bt-workbench-left">
+        {runError && (
+          <div className="bt-warning" style={{ marginBottom: '0.75rem' }}>
+            {runError}
+          </div>
+        )}
         <WorkbenchConfigPanel onRun={handleRun} running={isRunning} />
         {isRunning && (
           <div className="bt-job-inline">
@@ -117,10 +134,13 @@ export function BacktestWorkbench({
         {!activeResult && !isRunning && pinnedResults.length === 0 && (
           <div className="bt-empty-workbench">
             <h3>Backtest Workbench</h3>
-            <p>Configure your strategy on the left and click "Run Backtest" to see results here.</p>
+            <p>Configure your strategy on the left and click &quot;Run Backtest&quot; to see results here.</p>
             <p className="bt-empty-hint">
               Results accumulate in this workspace. Pin results to keep them across sessions,
               or compare multiple runs side by side.
+            </p>
+            <p className="bt-empty-hint" style={{ marginTop: '1rem', fontSize: '0.8rem' }}>
+              Ensure the backend is running (cd backend && uvicorn app.main:app --reload) and dates are valid.
             </p>
           </div>
         )}

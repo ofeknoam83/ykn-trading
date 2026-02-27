@@ -103,7 +103,7 @@ export function WorkbenchConfigPanel({ onRun, running, children }: WorkbenchConf
 
       <div className="bt-config-section">
         <label className="bt-config-label">Benchmark</label>
-        <BenchmarkPicker value={benchmark} onChange={setBenchmark} />
+        <BenchmarkPicker value={benchmark} onChange={setBenchmark} placeholder="None" />
       </div>
 
       <div className="bt-config-section bt-fee-row">
